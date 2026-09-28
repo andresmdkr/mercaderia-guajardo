@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { sequelize } = require('./db');
+const routes = require('./routes');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -18,5 +20,8 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({ ok: false, db: 'error', message: error.message });
   }
 });
+
+app.use('/api', routes);
+app.use(errorHandler);
 
 module.exports = app;

@@ -1,0 +1,108 @@
+const productController = require('../controllers/productController');
+const AppError = require('../utils/AppError');
+
+const MAX_LIMIT = 100;
+
+function toPositiveInt(value, fallback) {
+  const n = Number.parseInt(value, 10);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+}
+
+function parseBool(value) {
+  if (value === undefined || value === '') return undefined;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new AppError('Valor booleano inválido (usar true o false)');
+}
+
+function parseId(value) {
+  const id = Number.parseInt(value, 10);
+  if (!Number.isInteger(id) || id <= 0) throw new AppError('Id inválido');
+  return id;
+}
+
+// Valida el body de alta / edición y devuelve solo los campos permitidos.
+function validateProductBody(body) {
+  if ('stock' in body) {
+    throw new AppError('El stock no se edita desde el producto, se cambia con movimientos de stock');
+  }
+
+  const code = typeof body.code === 'string' ? body.code.trim() : '';
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const category = typeof body.category === 'string' ? body.category.trim() : '';
+
+  if (!code || code.length > 50) throw new AppError('El código es obligatorio (máx. 50 caracteres)');
+  if (!name || name.length > 150) throw new AppError('El nombre es obligatorio (máx. 150 caracteres)');
+  if (category.length > 100) throw new AppError('La categoría admite hasta 100 caracteres');
+
+  const costPrice = Number(body.costPrice);
+  const salePrice = Number(body.salePrice);
+  const minStock = Number(body.minStock ?? 0);
+
+  if (!Number.isFinite(costPrice) || costPrice < 0) throw new AppError('El precio de costo debe ser un número mayor o igual a 0');
+  if (!Number.isFinite(salePrice) || salePrice < 0) throw new AppError('El precio de venta debe ser un número mayor o igual a 0');
+  if (!Number.isInteger(minStock) || minStock < 0) throw new AppError('El stock mínimo debe ser un entero mayor o igual a 0');
+
+  return {
+    code,
+    name,
+    category: category || null,
+    costPrice: Math.round(costPrice * 100) / 100,
+    salePrice: Math.round(salePrice * 100) / 100,
+    minStock,
+  };
+}
+
+async function list(req, res, next) {
+  try {
+    const { page, limit, search, category, lowStock, active } = req.query;
+    const result = await productController.list({
+      page: toPositiveInt(page, 1),
+      limit: Math.min(toPositiveInt(limit, 20), MAX_LIMIT),
+      search: search?.trim(),
+      category: category?.trim(),
+      lowStock: parseBool(lowStock),
+      active: parseBool(active),
+    });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getById(req, res, next) {
+  try {
+    res.json(await productController.getById(parseId(req.params.id)));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function create(req, res, next) {
+  try {
+    const product = await productController.create(validateProductBody(req.body));
+    res.status(201).json(product);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function update(req, res, next) {
+  try {
+    const product = await productController.update(parseId(req.params.id), validateProductBody(req.body));
+    res.json(product);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function setStatus(req, res, next) {
+  try {
+    if (typeof req.body.active !== 'boolean') throw new AppError('"active" debe ser true o false');
+    res.json(await productController.setActive(parseId(req.params.id), req.body.active));
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { list, getById, create, update, setStatus };

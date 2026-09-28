@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { Sequelize } = require('sequelize');
+const defineProduct = require('./models/Product');
 
 const { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
 
@@ -10,6 +11,8 @@ const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
   logging: false,
 });
 
-// Acá se van a definir los modelos y sus relaciones (etapa 1 en adelante).
+const Product = defineProduct(sequelize);
 
-module.exports = { sequelize };
+// Acá se van a definir las relaciones entre modelos (ventas, movimientos, etc.).
+
+module.exports = { sequelize, Product };
