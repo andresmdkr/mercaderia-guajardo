@@ -1,4 +1,4 @@
-const { Op, col, where } = require('sequelize');
+const { Op, col, fn, where } = require('sequelize');
 const { sequelize, Category, Product } = require('../db');
 const AppError = require('../utils/AppError');
 const { applyMovement } = require('./stockController');
@@ -31,6 +31,17 @@ async function list({ page, limit, search, categoryId, lowStock, active }) {
 async function getById(id) {
   const product = await Product.findByPk(id, { include: includeCategory });
   if (!product) throw new AppError('Producto no encontrado', 404);
+  return product;
+}
+
+// Para escanear o tipear el código en la pantalla de venta: coincidencia exacta, sin distinguir mayúsculas.
+async function getByCode(code) {
+  const product = await Product.findOne({
+    where: where(fn('LOWER', col('code')), code.toLowerCase()),
+    include: includeCategory,
+  });
+  if (!product) throw new AppError('No existe un producto con ese código', 404);
+  if (!product.active) throw new AppError(`"${product.name}" está dado de baja`, 409);
   return product;
 }
 
@@ -72,4 +83,4 @@ async function setActive(id, active) {
   return product;
 }
 
-module.exports = { list, getById, create, update, setActive };
+module.exports = { list, getById, getByCode, create, update, setActive };

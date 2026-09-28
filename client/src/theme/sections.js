@@ -23,6 +23,13 @@ export const sections = [
         icon: CategoryIcon,
         description: 'Organizá tus productos por rubro',
       },
+      {
+        key: 'stock',
+        label: 'Stock',
+        path: '/products/stock',
+        icon: SwapVertIcon,
+        description: 'Entradas, salidas y ajustes de mercadería',
+      },
     ],
   },
   {
@@ -31,13 +38,6 @@ export const sections = [
     path: '/customers',
     icon: PeopleIcon,
     description: 'Tus clientes y sus datos de contacto',
-  },
-  {
-    key: 'stock',
-    label: 'Stock',
-    path: '/stock',
-    icon: SwapVertIcon,
-    description: 'Entradas, salidas y ajustes de mercadería',
   },
 ];
 

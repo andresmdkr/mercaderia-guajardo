@@ -1,19 +1,10 @@
 const stockController = require('../controllers/stockController');
 const AppError = require('../utils/AppError');
-const { toPositiveInt } = require('../utils/parse');
+const { parseDate, toPositiveInt } = require('../utils/parse');
 
 const MAX_LIMIT = 100;
 const MANUAL_TYPES = ['in', 'out', 'adjustment'];
 const FILTER_TYPES = [...MANUAL_TYPES, 'sale', 'sale_void'];
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-// Fecha "YYYY-MM-DD" en hora local; `endOfDay` la lleva al último instante del día.
-function parseDate(value, label, endOfDay = false) {
-  if (value === undefined || value === '') return undefined;
-  const date = new Date(`${value}T${endOfDay ? '23:59:59.999' : '00:00:00'}`);
-  if (!DATE_REGEX.test(value) || Number.isNaN(date.getTime())) throw new AppError(`Fecha "${label}" inválida (usar AAAA-MM-DD)`);
-  return date;
-}
 
 function parseInteger(value, label) {
   const n = Number(value);

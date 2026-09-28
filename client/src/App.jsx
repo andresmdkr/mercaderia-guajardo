@@ -28,7 +28,7 @@ export default function App() {
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/categories" element={<CategoriesPage />} />
           <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/stock" element={<StockPage />} />
+          <Route path="/products/stock" element={<StockPage />} />
         </Route>
       </Route>
     </Routes>

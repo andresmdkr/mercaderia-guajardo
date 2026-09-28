@@ -20,4 +20,16 @@ function parseId(value) {
   return id;
 }
 
-module.exports = { toPositiveInt, parseBool, parseId };
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+// Fecha "AAAA-MM-DD" en hora local; `endOfDay` la lleva al último instante del día.
+function parseDate(value, label, endOfDay = false) {
+  if (value === undefined || value === '') return undefined;
+  const date = new Date(`${value}T${endOfDay ? '23:59:59.999' : '00:00:00'}`);
+  if (!DATE_REGEX.test(value) || Number.isNaN(date.getTime())) {
+    throw new AppError(`Fecha "${label}" inválida (usar AAAA-MM-DD)`);
+  }
+  return date;
+}
+
+module.exports = { toPositiveInt, parseBool, parseId, parseDate };

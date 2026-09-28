@@ -72,6 +72,16 @@ function parseInitialStock(value) {
   return n;
 }
 
+async function getByCode(req, res, next) {
+  try {
+    const code = String(req.params.code ?? '').trim();
+    if (!code) throw new AppError('Ingresá un código');
+    res.json(await productController.getByCode(code));
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function create(req, res, next) {
   try {
     const product = await productController.create(validateProductBody(req.body), {
@@ -102,4 +112,4 @@ async function setStatus(req, res, next) {
   }
 }
 
-module.exports = { list, getById, create, update, setStatus };
+module.exports = { list, getById, getByCode, create, update, setStatus };

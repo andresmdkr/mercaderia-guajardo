@@ -8,7 +8,7 @@ const sectionColors = {
   light: {
     home: '#7A7568',
     products: '#C15F3C',
-    categories: '#C15F3C', // subgrupo de Productos: hereda su color
+    categories: '#9563A3',
     customers: '#4F7CA8',
     stock: '#B8862E',
     sales: '#4E8B5F',
@@ -17,7 +17,7 @@ const sectionColors = {
   dark: {
     home: '#A6A196',
     products: '#E08A6A',
-    categories: '#E08A6A',
+    categories: '#BE92CC',
     customers: '#7FA6CF',
     stock: '#DDB25C',
     sales: '#7FBF92',

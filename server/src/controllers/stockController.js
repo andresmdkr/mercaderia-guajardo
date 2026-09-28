@@ -29,10 +29,10 @@ function computeDelta(type, { quantity, newStock }, currentStock) {
  * si no, abre una propia. La fila del producto se bloquea mientras se calcula, para que
  * dos operaciones simultáneas no se pisen.
  */
-async function applyMovement({ productId, type, quantity, newStock, reason, userId }, { transaction } = {}) {
+async function applyMovement({ productId, type, quantity, newStock, reason, userId, saleId }, { transaction } = {}) {
   if (!transaction) {
     return sequelize.transaction((t) =>
-      applyMovement({ productId, type, quantity, newStock, reason, userId }, { transaction: t })
+      applyMovement({ productId, type, quantity, newStock, reason, userId, saleId }, { transaction: t })
     );
   }
 
@@ -54,7 +54,7 @@ async function applyMovement({ productId, type, quantity, newStock, reason, user
 
   await product.update({ stock: stockAfter }, { transaction });
   return StockMovement.create(
-    { productId, userId, type, quantity: delta, stockBefore, stockAfter, reason: reason || null },
+    { productId, userId, saleId: saleId ?? null, type, quantity: delta, stockBefore, stockAfter, reason: reason || null },
     { transaction }
   );
 }
