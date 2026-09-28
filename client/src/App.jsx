@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import CategoriesPage from './features/categories/pages/CategoriesPage';
+import CustomersPage from './features/customers/pages/CustomersPage';
 import ProductsPage from './features/products/pages/ProductsPage';
 import { checkSession } from './redux/sessionSlice';
 
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/customers" element={<CustomersPage />} />
         </Route>
       </Route>
     </Routes>

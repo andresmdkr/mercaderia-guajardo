@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Sequelize } = require('sequelize');
 const defineCategory = require('./models/Category');
+const defineCustomer = require('./models/Customer');
 const defineProduct = require('./models/Product');
 const defineUser = require('./models/User');
 
@@ -14,6 +15,7 @@ const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
 });
 
 const Category = defineCategory(sequelize);
+const Customer = defineCustomer(sequelize);
 const Product = defineProduct(sequelize);
 const User = defineUser(sequelize);
 
@@ -21,4 +23,4 @@ const User = defineUser(sequelize);
 Category.hasMany(Product, { foreignKey: 'categoryId', as: 'products' });
 Product.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 
-module.exports = { sequelize, Category, Product, User };
+module.exports = { sequelize, Category, Customer, Product, User };

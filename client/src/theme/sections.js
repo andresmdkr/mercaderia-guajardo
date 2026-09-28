@@ -1,6 +1,7 @@
 import CategoryIcon from '@mui/icons-material/CategoryOutlined';
 import HomeIcon from '@mui/icons-material/HomeOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
+import PeopleIcon from '@mui/icons-material/PeopleOutlined';
 
 // Secciones de la app. El color de cada una vive en el tema (palette.sections[key]).
 // Al sumar una pantalla nueva, se agrega acá y aparece en el menú y en la portada.
@@ -19,6 +20,13 @@ export const sections = [
     path: '/categories',
     icon: CategoryIcon,
     description: 'Organizá tus productos por rubro',
+  },
+  {
+    key: 'customers',
+    label: 'Clientes',
+    path: '/customers',
+    icon: PeopleIcon,
+    description: 'Tus clientes y sus datos de contacto',
   },
 ];
 

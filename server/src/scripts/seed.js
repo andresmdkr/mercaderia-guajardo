@@ -1,6 +1,6 @@
 // Uso: npm run seed
 // Carga datos de ejemplo para probar la app. Solo desarrollo; se puede correr varias veces.
-const { sequelize, Category, Product } = require('../db');
+const { sequelize, Category, Customer, Product } = require('../db');
 
 if (process.env.NODE_ENV === 'production') {
   console.error('El seed no se puede correr en producción');
@@ -28,6 +28,15 @@ const PRODUCTS = [
   ['GOL002', 'Chocolate 100g', 'Golosinas', 1300, 2000, 8],
 ];
 
+// [nombre, teléfono, email, dirección, notas]
+const CUSTOMERS = [
+  ['María Pérez', '11 5555-1234', 'maria.perez@example.com', 'Av. Rivadavia 1234', 'Paga los viernes'],
+  ['Juan Gómez', '11 4444-5678', null, 'San Martín 456', null],
+  ['Lucía Fernández', '351 555-9012', 'lucia.f@example.com', null, 'Prefiere transferencia'],
+  ['Carlos Rodríguez', '11 6666-3456', null, 'Belgrano 789', null],
+  ['Ana Martínez', null, 'ana.martinez@example.com', null, null],
+];
+
 async function main() {
   const categoryIds = {};
   for (const name of CATEGORIES) {
@@ -44,7 +53,15 @@ async function main() {
     if (isNew) created += 1;
   }
 
-  console.log(`Seed listo: ${CATEGORIES.length} categorías, ${created} productos nuevos`);
+  let customersCreated = 0;
+  for (const [name, phone, email, address, notes] of CUSTOMERS) {
+    const [, isNew] = await Customer.findOrCreate({ where: { name }, defaults: { name, phone, email, address, notes } });
+    if (isNew) customersCreated += 1;
+  }
+
+  console.log(
+    `Seed listo: ${CATEGORIES.length} categorías, ${created} productos nuevos, ${customersCreated} clientes nuevos`
+  );
 }
 
 main()

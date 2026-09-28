@@ -1,11 +1,6 @@
 const categoryController = require('../controllers/categoryController');
 const AppError = require('../utils/AppError');
-
-function parseId(value) {
-  const id = Number.parseInt(value, 10);
-  if (!Number.isInteger(id) || id <= 0) throw new AppError('Id inválido');
-  return id;
-}
+const { parseId } = require('../utils/parse');
 
 function validateBody(body) {
   const name = typeof body.name === 'string' ? body.name.trim() : '';
