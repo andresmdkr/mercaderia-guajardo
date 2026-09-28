@@ -21,9 +21,9 @@ jobs:
         working-directory: desktop
         shell: pwsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -69,11 +69,39 @@ jobs:
           if (Test-Path smoke.json) { Get-Content smoke.json }
           if ($process.ExitCode -ne 0) { throw "La prueba automática falló (código $($process.ExitCode))" }
 
-      - name: Crear el instalador y publicar la versión
+      # La versión se crea ANTES de subir los archivos. Si no existe, electron-builder sube el instalador
+      # y el latest.yml en paralelo y cada uno crea su propia versión (quedan duplicadas e incompletas).
+      - name: Crear la versión en GitHub
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view $env:GITHUB_REF_NAME *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:GITHUB_REF_NAME --verify-tag --generate-notes --title "Versión $($env:GITHUB_REF_NAME.TrimStart('v'))"
+            if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear la versión' }
+          }
+
+      - name: Crear el instalador y subirlo a la versión
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win --ia32 --publish always --prepackaged dist/win-ia32-unpacked
+
+      # Comprobación final: la versión tiene que tener exactamente el instalador y el latest.yml.
+      - name: Verificar los archivos de la versión
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $releases = gh api "repos/$($env:GITHUB_REPOSITORY)/releases?per_page=100" | ConvertFrom-Json | Where-Object { $_.tag_name -eq $env:GITHUB_REF_NAME }
+          if (@($releases).Count -ne 1) { throw "Hay $(@($releases).Count) versiones con la etiqueta $($env:GITHUB_REF_NAME); tiene que haber una sola" }
+          $names = @($releases[0].assets | ForEach-Object { $_.name })
+          Write-Host ("Archivos de la versión: " + ($names -join ', '))
+          foreach ($needed in @('latest.yml', "MercaderiaGuajardo-Setup-$($releases[0].tag_name.TrimStart('v')).exe")) {
+            if ($names -notcontains $needed) { throw "Falta $needed en la versión publicada" }
+          }
+          if ($releases[0].draft) { throw 'La versión quedó como borrador' }
 
       - name: Crear el instalador (sin publicar)
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
@@ -81,7 +109,7 @@ jobs:
 
       - name: Guardar el instalador como archivo de la corrida
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: instalador-windows
           path: desktop/dist/*.exe
