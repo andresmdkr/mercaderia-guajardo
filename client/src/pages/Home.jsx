@@ -1,12 +1,75 @@
 import { useSelector } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
-import { Box, Grid, Paper, Typography, alpha, useTheme } from '@mui/material';
+import { Box, Button, Grid, Paper, Typography, alpha, useTheme } from '@mui/material';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCartOutlined';
 import { flatSections } from '../theme/sections';
+
+function IconBox({ icon: Icon, color, size = 44 }) {
+  return (
+    <Box
+      sx={{
+        width: size,
+        height: size,
+        flexShrink: 0,
+        borderRadius: 2.5,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color,
+        bgcolor: alpha(color, 0.14),
+      }}
+    >
+      <Icon />
+    </Box>
+  );
+}
+
+// Ventas es lo más importante: tarjeta grande y destacada.
+function NewSaleCard() {
+  const theme = useTheme();
+  const color = theme.palette.sections.sales;
+
+  return (
+    <Paper
+      component={RouterLink}
+      to="/sales/new"
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 3,
+        flexWrap: 'wrap',
+        p: 3,
+        mb: 3,
+        color: 'inherit',
+        textDecoration: 'none',
+        borderColor: color,
+        bgcolor: alpha(color, 0.07),
+        transition: 'background-color 0.15s',
+        '&:hover': { bgcolor: alpha(color, 0.13) },
+      }}
+    >
+      <IconBox icon={AddShoppingCartIcon} color={color} size={56} />
+      <Box sx={{ flexGrow: 1, minWidth: 200 }}>
+        <Typography variant="h5" component="h2">
+          Nueva venta
+        </Typography>
+        <Typography color="text.secondary">Cargá los productos, aplicá descuentos y el stock se actualiza solo.</Typography>
+      </Box>
+      <Button
+        variant="contained"
+        size="large"
+        component="span"
+        sx={{ bgcolor: color, color: theme.palette.getContrastText(color), '&:hover': { bgcolor: color } }}
+      >
+        Empezar
+      </Button>
+    </Paper>
+  );
+}
 
 function SectionCard({ section }) {
   const theme = useTheme();
   const color = theme.palette.sections[section.key];
-  const Icon = section.icon;
 
   return (
     <Paper
@@ -22,20 +85,8 @@ function SectionCard({ section }) {
         '&:hover': { borderColor: color, transform: 'translateY(-2px)' },
       }}
     >
-      <Box
-        sx={{
-          width: 44,
-          height: 44,
-          mb: 2,
-          borderRadius: 2.5,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color,
-          bgcolor: alpha(color, 0.14),
-        }}
-      >
-        <Icon />
+      <Box sx={{ mb: 2 }}>
+        <IconBox icon={section.icon} color={color} />
       </Box>
       <Typography variant="h6" gutterBottom>
         {section.label}
@@ -58,6 +109,8 @@ export default function Home() {
       <Typography color="text.secondary" sx={{ mb: 4 }}>
         ¿Qué querés hacer hoy?
       </Typography>
+
+      <NewSaleCard />
 
       <Grid container spacing={2}>
         {flatSections

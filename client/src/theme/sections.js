@@ -13,9 +13,9 @@ export const sections = [
   {
     key: 'sales',
     label: 'Ventas',
-    path: '/sales/new', // cuando exista el listado de ventas pasa a '/sales'
+    path: '/sales',
     icon: ReceiptIcon,
-    description: 'Registrá ventas y controlá el stock automáticamente',
+    description: 'Historial de ventas, detalle y anulaciones',
   },
   {
     key: 'products',
