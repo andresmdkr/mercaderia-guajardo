@@ -1,37 +1,138 @@
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link as RouterLink, Outlet } from 'react-router-dom';
-import { AppBar, Box, Button, Container, Toolbar, Typography } from '@mui/material';
-import InventoryIcon from '@mui/icons-material/Inventory2';
-import CategoryIcon from '@mui/icons-material/Category';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import {
+  AppBar,
+  Box,
+  Button,
+  Container,
+  Drawer,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  Typography,
+  alpha,
+  useTheme,
+} from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
+import MenuIcon from '@mui/icons-material/Menu';
 import { logout } from '../redux/sessionSlice';
+import { sections } from '../theme/sections';
+import ThemeToggle from './ThemeToggle';
 
-export default function Layout() {
+const DRAWER_WIDTH = 252;
+
+function NavItem({ section, onNavigate }) {
+  const theme = useTheme();
+  const { pathname } = useLocation();
+  const color = theme.palette.sections[section.key];
+  const selected = section.path === '/' ? pathname === '/' : pathname.startsWith(section.path);
+  const Icon = section.icon;
+
+  return (
+    <ListItemButton
+      component={NavLink}
+      to={section.path}
+      onClick={onNavigate}
+      selected={selected}
+      sx={{
+        borderRadius: 2.5,
+        mb: 0.5,
+        '&.Mui-selected': { bgcolor: alpha(color, 0.14), '&:hover': { bgcolor: alpha(color, 0.2) } },
+      }}
+    >
+      <ListItemIcon sx={{ minWidth: 38, color }}>
+        <Icon fontSize="small" />
+      </ListItemIcon>
+      <ListItemText primary={section.label} slotProps={{ primary: { fontSize: 14.5, fontWeight: selected ? 600 : 500 } }} />
+    </ListItemButton>
+  );
+}
+
+function SidebarContent({ onNavigate }) {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.session.user);
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.100' }}>
-      <AppBar position="static">
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2 }}>
+      <Typography variant="h6" sx={{ px: 1.5, py: 1.5, mb: 1 }}>
+        Mercadería Guajardo
+      </Typography>
+
+      <List disablePadding sx={{ flexGrow: 1 }}>
+        {sections.map((section) => (
+          <NavItem key={section.key} section={section} onNavigate={onNavigate} />
+        ))}
+      </List>
+
+      <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2, px: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography variant="body2" noWrap sx={{ flexGrow: 1, fontWeight: 600 }}>
+          {user?.name}
+        </Typography>
+        <ThemeToggle />
+        <Button size="small" color="inherit" onClick={() => dispatch(logout())} startIcon={<LogoutIcon fontSize="small" />}>
+          Salir
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
+export default function Layout() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const closeMobile = () => setMobileOpen(false);
+
+  const drawerPaperSx = (theme) => ({
+    width: DRAWER_WIDTH,
+    boxSizing: 'border-box',
+    bgcolor: theme.palette.sidebar,
+    borderRight: `1px solid ${theme.palette.divider}`,
+    borderTop: 0,
+    borderBottom: 0,
+    borderLeft: 0,
+  });
+
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Barra superior: solo en pantallas chicas */}
+      <AppBar position="fixed" color="inherit" sx={{ display: { md: 'none' }, bgcolor: 'background.paper', border: 0, borderBottom: 1, borderColor: 'divider' }}>
         <Toolbar>
-          <Typography variant="h6" component={RouterLink} to="/" sx={{ color: 'inherit', textDecoration: 'none', flexGrow: 1 }}>
+          <IconButton edge="start" onClick={() => setMobileOpen(true)} aria-label="Abrir menú" sx={{ mr: 1 }}>
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Mercadería Guajardo
           </Typography>
-          <Button color="inherit" component={RouterLink} to="/products" startIcon={<InventoryIcon />}>
-            Productos
-          </Button>
-          <Button color="inherit" component={RouterLink} to="/categories" startIcon={<CategoryIcon />}>
-            Categorías
-          </Button>
-          <Typography sx={{ mx: 2 }}>{user?.name}</Typography>
-          <Button color="inherit" startIcon={<LogoutIcon />} onClick={() => dispatch(logout())}>
-            Salir
-          </Button>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Outlet />
-      </Container>
+
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={closeMobile}
+        ModalProps={{ keepMounted: true }}
+        sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': drawerPaperSx }}
+      >
+        <SidebarContent onNavigate={closeMobile} />
+      </Drawer>
+
+      <Drawer
+        variant="permanent"
+        open
+        sx={{ display: { xs: 'none', md: 'block' }, width: DRAWER_WIDTH, flexShrink: 0, '& .MuiDrawer-paper': drawerPaperSx }}
+      >
+        <SidebarContent />
+      </Drawer>
+
+      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 2, md: 4 } }}>
+        <Toolbar sx={{ display: { md: 'none' } }} />
+        <Container maxWidth="lg" disableGutters>
+          <Outlet />
+        </Container>
+      </Box>
     </Box>
   );
 }

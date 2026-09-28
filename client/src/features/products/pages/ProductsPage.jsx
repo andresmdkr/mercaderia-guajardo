@@ -10,10 +10,10 @@ import {
   Snackbar,
   Switch,
   TextField,
-  Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import PageHeader from '../../../components/PageHeader';
 import { getErrorMessage } from '../../../services/api';
 import { createCategory } from '../../categories/api/categoriesApi';
 import useCategories from '../../categories/hooks/useCategories';
@@ -60,15 +60,18 @@ export default function ProductsPage() {
 
   return (
     <>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
-        <Typography variant="h5" sx={{ flexGrow: 1 }}>
-          Productos
-        </Typography>
-        {products.loading && <CircularProgress size={22} />}
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>
-          Nuevo producto
-        </Button>
-      </Box>
+      <PageHeader
+        sectionKey="products"
+        title="Productos"
+        actions={
+          <>
+            {products.loading && <CircularProgress size={22} />}
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>
+              Nuevo producto
+            </Button>
+          </>
+        }
+      />
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, mb: 2 }}>
         <TextField

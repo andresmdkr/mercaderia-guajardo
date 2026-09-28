@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   Alert,
-  Box,
   Button,
   IconButton,
   Paper,
@@ -19,6 +18,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import PageHeader from '../../../components/PageHeader';
 import { getErrorMessage } from '../../../services/api';
 import { createCategory, deleteCategory, updateCategory } from '../api/categoriesApi';
 import CategoryDialog from '../components/CategoryDialog';
@@ -57,14 +57,15 @@ export default function CategoriesPage() {
 
   return (
     <>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5" sx={{ flexGrow: 1 }}>
-          Categorías
-        </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>
-          Nueva categoría
-        </Button>
-      </Box>
+      <PageHeader
+        sectionKey="categories"
+        title="Categorías"
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>
+            Nueva categoría
+          </Button>
+        }
+      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
 import { Alert, Box, Button, Paper, TextField, Typography } from '@mui/material';
 import Loader from '../components/Loader';
+import ThemeToggle from '../components/ThemeToggle';
 import { login } from '../redux/sessionSlice';
 
 export default function Login() {
@@ -28,7 +29,10 @@ export default function Login() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.100', p: 2 }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+      <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+        <ThemeToggle />
+      </Box>
       <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4, width: '100%', maxWidth: 380 }}>
         <Typography variant="h5" gutterBottom>
           Mercadería Guajardo
