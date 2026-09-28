@@ -9,6 +9,7 @@ export default function ProductPicker({
   label = 'Producto',
   includeInactive = false,
   autoFocus = false,
+  inputRef, // para poder devolverle el cursor desde afuera
   clearOnSelect = false, // para "agregar y seguir": limpia el campo después de elegir
   sx,
 }) {
@@ -45,7 +46,7 @@ export default function ProductPicker({
           </Typography>
         </Box>
       )}
-      renderInput={(params) => <TextField {...params} label={label} autoFocus={autoFocus} />}
+      renderInput={(params) => <TextField {...params} label={label} autoFocus={autoFocus} inputRef={inputRef} />}
     />
   );
 }

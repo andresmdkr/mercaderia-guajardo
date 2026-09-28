@@ -26,18 +26,18 @@ export const sections = [
     description: 'Alta, edición y stock de tus productos',
     children: [
       {
-        key: 'categories',
-        label: 'Categorías',
-        path: '/products/categories',
-        icon: CategoryIcon,
-        description: 'Organizá tus productos por rubro',
-      },
-      {
         key: 'stock',
         label: 'Stock',
         path: '/products/stock',
         icon: SwapVertIcon,
         description: 'Entradas, salidas y ajustes de mercadería',
+      },
+      {
+        key: 'categories',
+        label: 'Categorías',
+        path: '/products/categories',
+        icon: CategoryIcon,
+        description: 'Organizá tus productos por rubro',
       },
     ],
   },
