@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import CategoriesPage from './features/categories/pages/CategoriesPage';
 import CustomersPage from './features/customers/pages/CustomersPage';
 import ProductsPage from './features/products/pages/ProductsPage';
+import StockPage from './features/stock/pages/StockPage';
 import { checkSession } from './redux/sessionSlice';
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/categories" element={<CategoriesPage />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/stock" element={<StockPage />} />
         </Route>
       </Route>
     </Routes>

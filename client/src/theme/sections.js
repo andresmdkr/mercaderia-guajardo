@@ -2,6 +2,7 @@ import CategoryIcon from '@mui/icons-material/CategoryOutlined';
 import HomeIcon from '@mui/icons-material/HomeOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
 import PeopleIcon from '@mui/icons-material/PeopleOutlined';
+import SwapVertIcon from '@mui/icons-material/SwapVertOutlined';
 
 // Secciones de la app. El color de cada una vive en el tema (palette.sections[key]).
 // Una sección puede tener `children` (subgrupo): se muestran como submenú.
@@ -30,6 +31,13 @@ export const sections = [
     path: '/customers',
     icon: PeopleIcon,
     description: 'Tus clientes y sus datos de contacto',
+  },
+  {
+    key: 'stock',
+    label: 'Stock',
+    path: '/stock',
+    icon: SwapVertIcon,
+    description: 'Entradas, salidas y ajustes de mercadería',
   },
 ];
 

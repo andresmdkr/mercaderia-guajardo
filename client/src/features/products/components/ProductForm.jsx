@@ -10,12 +10,13 @@ import {
   DialogTitle,
   Grid,
   TextField,
+  Typography,
   createFilterOptions,
 } from '@mui/material';
 import ActiveToggleButton from '../../../components/ActiveToggleButton';
 import { getErrorMessage } from '../../../services/api';
 
-const emptyValues = { code: '', name: '', costPrice: '', salePrice: '', minStock: '0' };
+const emptyValues = { code: '', name: '', costPrice: '', salePrice: '', minStock: '0', initialStock: '' };
 const filter = createFilterOptions();
 
 function toFormValues(product) {
@@ -26,6 +27,7 @@ function toFormValues(product) {
     costPrice: String(product.costPrice),
     salePrice: String(product.salePrice),
     minStock: String(product.minStock),
+    initialStock: '',
   };
 }
 
@@ -37,6 +39,9 @@ function validate(values) {
   if (values.costPrice === '' || Number(values.costPrice) < 0) errors.costPrice = 'Debe ser 0 o más';
   if (values.salePrice === '' || Number(values.salePrice) < 0) errors.salePrice = 'Debe ser 0 o más';
   if (!Number.isInteger(Number(values.minStock)) || Number(values.minStock) < 0) errors.minStock = 'Entero de 0 o más';
+  if (values.initialStock !== '' && (!Number.isInteger(Number(values.initialStock)) || Number(values.initialStock) < 0)) {
+    errors.initialStock = 'Entero de 0 o más';
+  }
   return errors;
 }
 
@@ -66,6 +71,8 @@ export default function ProductForm({ product, categories, onCreateCategory, onC
         costPrice: Number(values.costPrice),
         salePrice: Number(values.salePrice),
         minStock: Number(values.minStock),
+        // El stock inicial solo se pide al crear; después se cambia con movimientos.
+        ...(product ? {} : { initialStock: Number(values.initialStock || 0) }),
       });
     } catch (error) {
       setServerError(getErrorMessage(error));
@@ -142,6 +149,19 @@ export default function ProductForm({ product, categories, onCreateCategory, onC
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             {field('minStock', 'Stock mínimo', { type: 'number', slotProps: { htmlInput: { min: 0, step: 1 } } })}
+          </Grid>
+          <Grid size={12}>
+            {product ? (
+              <Typography variant="body2" color="text.secondary">
+                Stock actual: <strong>{product.stock}</strong>. Para cambiarlo, usá <em>Stock → Nuevo movimiento</em>.
+              </Typography>
+            ) : (
+              field('initialStock', 'Stock inicial (opcional)', {
+                type: 'number',
+                helperText: errors.initialStock ?? 'Se registra como una entrada de stock',
+                slotProps: { htmlInput: { min: 0, step: 1 } },
+              })
+            )}
           </Grid>
         </Grid>
       </DialogContent>

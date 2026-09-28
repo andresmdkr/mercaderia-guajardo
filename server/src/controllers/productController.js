@@ -1,6 +1,7 @@
 const { Op, col, where } = require('sequelize');
-const { Category, Product } = require('../db');
+const { sequelize, Category, Product } = require('../db');
 const AppError = require('../utils/AppError');
+const { applyMovement } = require('./stockController');
 
 const includeCategory = [{ model: Category, as: 'category', attributes: ['id', 'name'] }];
 
@@ -39,11 +40,23 @@ async function assertCategoryExists(categoryId) {
   if (!exists) throw new AppError('La categoría no existe');
 }
 
-// El stock no se toca acá: arranca en 0 y solo cambia con movimientos de stock.
-async function create(data) {
+// El stock no se escribe directo: arranca en 0 y, si hay stock inicial, entra como un
+// movimiento (dentro de la misma transacción, así o se crea todo o nada).
+async function create(data, { initialStock = 0, userId } = {}) {
   await assertCategoryExists(data.categoryId);
-  const product = await Product.create(data);
-  return getById(product.id);
+
+  const productId = await sequelize.transaction(async (transaction) => {
+    const product = await Product.create(data, { transaction });
+    if (initialStock > 0) {
+      await applyMovement(
+        { productId: product.id, type: 'in', quantity: initialStock, reason: 'Stock inicial', userId },
+        { transaction }
+      );
+    }
+    return product.id;
+  });
+
+  return getById(productId);
 }
 
 async function update(id, data) {

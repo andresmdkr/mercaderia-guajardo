@@ -65,9 +65,19 @@ async function getById(req, res, next) {
   }
 }
 
+function parseInitialStock(value) {
+  if (value === undefined || value === null || value === '') return 0;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 0) throw new AppError('El stock inicial debe ser un entero mayor o igual a 0');
+  return n;
+}
+
 async function create(req, res, next) {
   try {
-    const product = await productController.create(validateProductBody(req.body));
+    const product = await productController.create(validateProductBody(req.body), {
+      initialStock: parseInitialStock(req.body.initialStock),
+      userId: req.user.id,
+    });
     res.status(201).json(product);
   } catch (error) {
     next(error);

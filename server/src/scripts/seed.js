@@ -1,6 +1,7 @@
 // Uso: npm run seed
 // Carga datos de ejemplo para probar la app. Solo desarrollo; se puede correr varias veces.
-const { sequelize, Category, Customer, Product } = require('../db');
+const { sequelize, Category, Customer, Product, StockMovement, User } = require('../db');
+const { applyMovement } = require('../controllers/stockController');
 
 if (process.env.NODE_ENV === 'production') {
   console.error('El seed no se puede correr en producción');
@@ -28,6 +29,15 @@ const PRODUCTS = [
   ['GOL002', 'Chocolate 100g', 'Golosinas', 1300, 2000, 8],
 ];
 
+// Stock inicial por código. Varios quedan en o bajo el mínimo, para probar "stock bajo".
+const INITIAL_STOCK = {
+  ALM001: 3, ALM002: 24, ALM003: 15, ALM004: 9, ALM005: 20,
+  BEB001: 12, BEB002: 12, BEB003: 30,
+  LIM001: 10, LIM002: 8, LIM003: 5,
+  LAC001: 4, LAC002: 10,
+  GOL001: 40, GOL002: 14,
+};
+
 // [nombre, teléfono, email, dirección, notas]
 const CUSTOMERS = [
   ['María Pérez', '11 5555-1234', 'maria.perez@example.com', 'Av. Rivadavia 1234', 'Paga los viernes'],
@@ -53,6 +63,26 @@ async function main() {
     if (isNew) created += 1;
   }
 
+  // El stock se carga como movimientos (nunca se escribe directo). Solo a productos sin historial.
+  let stocked = 0;
+  const user = await User.findOne({ order: [['id', 'ASC']] });
+  if (!user) {
+    console.log('No hay usuarios: se omite el stock inicial (creá uno con npm run create-user y volvé a correr el seed)');
+  } else {
+    for (const [code, quantity] of Object.entries(INITIAL_STOCK)) {
+      const product = await Product.findOne({ where: { code } });
+      if (!product || (await StockMovement.count({ where: { productId: product.id } })) > 0) continue;
+      await applyMovement({
+        productId: product.id,
+        type: 'in',
+        quantity,
+        reason: 'Stock inicial (datos de ejemplo)',
+        userId: user.id,
+      });
+      stocked += 1;
+    }
+  }
+
   let customersCreated = 0;
   for (const [name, phone, email, address, notes] of CUSTOMERS) {
     const [, isNew] = await Customer.findOrCreate({ where: { name }, defaults: { name, phone, email, address, notes } });
@@ -60,7 +90,7 @@ async function main() {
   }
 
   console.log(
-    `Seed listo: ${CATEGORIES.length} categorías, ${created} productos nuevos, ${customersCreated} clientes nuevos`
+    `Seed listo: ${CATEGORIES.length} categorías, ${created} productos nuevos, ${stocked} con stock inicial, ${customersCreated} clientes nuevos`
   );
 }
 
