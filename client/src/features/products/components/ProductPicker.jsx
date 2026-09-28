@@ -3,14 +3,27 @@ import { Autocomplete, Box, TextField, Typography } from '@mui/material';
 import useProductSearch from '../hooks/useProductSearch';
 
 // Selector de producto con búsqueda por código o nombre (consulta al backend mientras se escribe).
-export default function ProductPicker({ value, onChange, label = 'Producto', includeInactive = false, autoFocus = false, sx }) {
+export default function ProductPicker({
+  value,
+  onChange,
+  label = 'Producto',
+  includeInactive = false,
+  autoFocus = false,
+  clearOnSelect = false, // para "agregar y seguir": limpia el campo después de elegir
+  sx,
+}) {
   const [inputValue, setInputValue] = useState('');
   const { options, loading } = useProductSearch(inputValue, { includeInactive });
+
+  const handleChange = (event, product) => {
+    onChange(product);
+    if (clearOnSelect) setInputValue('');
+  };
 
   return (
     <Autocomplete
       value={value}
-      onChange={(event, product) => onChange(product)}
+      onChange={handleChange}
       inputValue={inputValue}
       onInputChange={(event, text) => setInputValue(text)}
       options={options}

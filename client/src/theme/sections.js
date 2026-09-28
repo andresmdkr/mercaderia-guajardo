@@ -2,6 +2,7 @@ import CategoryIcon from '@mui/icons-material/CategoryOutlined';
 import HomeIcon from '@mui/icons-material/HomeOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
 import PeopleIcon from '@mui/icons-material/PeopleOutlined';
+import ReceiptIcon from '@mui/icons-material/ReceiptLongOutlined';
 import SwapVertIcon from '@mui/icons-material/SwapVertOutlined';
 
 // Secciones de la app. El color de cada una vive en el tema (palette.sections[key]).
@@ -9,6 +10,13 @@ import SwapVertIcon from '@mui/icons-material/SwapVertOutlined';
 // Al sumar una pantalla nueva, se agrega acá y aparece en el menú y en la portada.
 export const sections = [
   { key: 'home', label: 'Inicio', path: '/', icon: HomeIcon },
+  {
+    key: 'sales',
+    label: 'Ventas',
+    path: '/sales/new', // cuando exista el listado de ventas pasa a '/sales'
+    icon: ReceiptIcon,
+    description: 'Registrá ventas y controlá el stock automáticamente',
+  },
   {
     key: 'products',
     label: 'Productos',

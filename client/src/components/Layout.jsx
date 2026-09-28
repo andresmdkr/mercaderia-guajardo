@@ -18,6 +18,7 @@ import {
   alpha,
   useTheme,
 } from '@mui/material';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCartOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import { logout } from '../redux/sessionSlice';
@@ -74,13 +75,33 @@ function NavItem({ section, onNavigate, nested = false }) {
 
 function SidebarContent({ onNavigate }) {
   const dispatch = useDispatch();
+  const theme = useTheme();
   const user = useSelector((state) => state.session.user);
+  const salesColor = theme.palette.sections.sales;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2 }}>
       <Typography variant="h6" sx={{ px: 1.5, py: 1.5, mb: 1 }}>
         Mercadería Guajardo
       </Typography>
+
+      {/* Ventas es lo más importante: acceso directo siempre a mano */}
+      <Button
+        component={NavLink}
+        to="/sales/new"
+        onClick={onNavigate}
+        variant="contained"
+        startIcon={<AddShoppingCartIcon />}
+        sx={{
+          mb: 2,
+          py: 1.1,
+          bgcolor: salesColor,
+          color: theme.palette.getContrastText(salesColor),
+          '&:hover': { bgcolor: salesColor, filter: 'brightness(0.92)' },
+        }}
+      >
+        Nueva venta
+      </Button>
 
       <List disablePadding sx={{ flexGrow: 1 }}>
         {sections.map((section) => (
