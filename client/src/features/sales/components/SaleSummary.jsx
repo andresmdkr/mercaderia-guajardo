@@ -108,7 +108,16 @@ export default function SaleSummary({
           </Row>
         )}
         <Row label="Total" sx={{ mt: 1 }}>
-          <Typography variant="h4" component="p" sx={{ color: (theme) => theme.palette.sections.sales, fontWeight: 600 }}>
+          <Typography
+            component="p"
+            sx={{
+              color: (theme) => theme.palette.sections.sales,
+              fontFamily: (theme) => theme.typography.fontFamily, // cifras en sans, nunca serif
+              fontSize: 32,
+              fontWeight: 600,
+              lineHeight: 1.2,
+            }}
+          >
             {formatMoney(centsToMoney(totals.totalCents))}
           </Typography>
         </Row>
