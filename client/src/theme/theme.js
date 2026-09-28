@@ -13,6 +13,7 @@ const sectionColors = {
     stock: '#B8862E',
     sales: '#4E8B5F',
     reports: '#3E8E8E',
+    settings: '#7A7568',
   },
   dark: {
     home: '#A6A196',
@@ -22,6 +23,7 @@ const sectionColors = {
     stock: '#DDB25C',
     sales: '#7FBF92',
     reports: '#6FC0C0',
+    settings: '#A6A196',
   },
 };
 

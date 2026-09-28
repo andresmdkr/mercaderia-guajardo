@@ -16,9 +16,12 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import PdfIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import { formatDateTime, formatMoney, formatSaleNumber } from '../../../utils/format';
+import useBusinessSettings from '../../settings/hooks/useBusinessSettings';
 import { voidSale } from '../api/salesApi';
 import useSaleDetail from '../hooks/useSaleDetail';
+import { openReceiptPdf } from '../pdf/receiptPdf';
 import { PAYMENT_METHODS, SALE_STATUSES } from '../salesConstants';
 import VoidSaleDialog from './VoidSaleDialog';
 
@@ -47,6 +50,7 @@ function TotalRow({ label, value, strong }) {
 // Se monta solo cuando está abierto. `onChanged` avisa a la lista que la venta se modificó (anulación).
 export default function SaleDetailDialog({ saleId, onClose, onChanged }) {
   const { sale, setSale, error, loading } = useSaleDetail(saleId);
+  const business = useBusinessSettings(); // datos del encabezado del comprobante
   const [voiding, setVoiding] = useState(false);
 
   const handleVoid = async (reason) => {
@@ -137,13 +141,18 @@ export default function SaleDetailDialog({ saleId, onClose, onChanged }) {
 
         <DialogActions>
           {sale?.status === 'completed' && (
-            <>
-              <Button color="error" onClick={() => setVoiding(true)}>
-                Anular venta
-              </Button>
-              <Box sx={{ flexGrow: 1 }} />
-            </>
+            <Button color="error" onClick={() => setVoiding(true)}>
+              Anular venta
+            </Button>
           )}
+          <Box sx={{ flexGrow: 1 }} />
+          <Button
+            startIcon={<PdfIcon />}
+            disabled={!sale || !business.settings}
+            onClick={() => openReceiptPdf(sale, business.settings)}
+          >
+            Comprobante PDF
+          </Button>
           <Button onClick={onClose}>Cerrar</Button>
         </DialogActions>
       </Dialog>

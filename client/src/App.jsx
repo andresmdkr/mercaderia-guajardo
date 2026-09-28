@@ -9,6 +9,7 @@ import CategoriesPage from './features/categories/pages/CategoriesPage';
 import CustomersPage from './features/customers/pages/CustomersPage';
 import ProductsPage from './features/products/pages/ProductsPage';
 import NewSalePage from './features/sales/pages/NewSalePage';
+import SettingsPage from './features/settings/pages/SettingsPage';
 import SalesPage from './features/sales/pages/SalesPage';
 import StockPage from './features/stock/pages/StockPage';
 import { checkSession } from './redux/sessionSlice';
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/categories" element={<CategoriesPage />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/products/stock" element={<StockPage />} />
         </Route>
       </Route>

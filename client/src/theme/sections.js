@@ -3,6 +3,7 @@ import HomeIcon from '@mui/icons-material/HomeOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
 import PeopleIcon from '@mui/icons-material/PeopleOutlined';
 import ReceiptIcon from '@mui/icons-material/ReceiptLongOutlined';
+import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import SwapVertIcon from '@mui/icons-material/SwapVertOutlined';
 
 // Secciones de la app. El color de cada una vive en el tema (palette.sections[key]).
@@ -46,6 +47,13 @@ export const sections = [
     path: '/customers',
     icon: PeopleIcon,
     description: 'Tus clientes y sus datos de contacto',
+  },
+  {
+    key: 'settings',
+    label: 'Configuración',
+    path: '/settings',
+    icon: SettingsIcon,
+    description: 'Datos de tu negocio para los comprobantes',
   },
 ];
 
