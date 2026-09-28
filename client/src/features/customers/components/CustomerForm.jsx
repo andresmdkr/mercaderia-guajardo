@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField } from '@mui/material';
+import ActiveToggleButton from '../../../components/ActiveToggleButton';
 import { getErrorMessage } from '../../../services/api';
 import useDuplicatePhone from '../hooks/useDuplicatePhone';
 
@@ -24,7 +25,7 @@ function validate(values) {
 }
 
 // Se monta solo cuando el diálogo está abierto, así el estado arranca limpio cada vez.
-export default function CustomerForm({ customer, onClose, onSubmit }) {
+export default function CustomerForm({ customer, onClose, onSubmit, onToggleActive }) {
   const [values, setValues] = useState(() => toFormValues(customer));
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState(null);
@@ -93,6 +94,17 @@ export default function CustomerForm({ customer, onClose, onSubmit }) {
         </Grid>
       </DialogContent>
       <DialogActions>
+        {customer && (
+          <>
+            <ActiveToggleButton
+              active={customer.active}
+              description={`al cliente "${customer.name}"`}
+              onToggle={onToggleActive}
+              disabled={saving}
+            />
+            <Box sx={{ flexGrow: 1 }} />
+          </>
+        )}
         <Button onClick={onClose} disabled={saving}>
           Cancelar
         </Button>

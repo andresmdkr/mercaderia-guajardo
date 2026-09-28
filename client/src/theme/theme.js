@@ -8,19 +8,19 @@ const sectionColors = {
   light: {
     home: '#7A7568',
     products: '#C15F3C',
-    categories: '#5E8B65',
+    categories: '#C15F3C', // subgrupo de Productos: hereda su color
     customers: '#4F7CA8',
     stock: '#B8862E',
-    sales: '#9563A3',
+    sales: '#4E8B5F',
     reports: '#3E8E8E',
   },
   dark: {
     home: '#A6A196',
     products: '#E08A6A',
-    categories: '#86B58D',
+    categories: '#E08A6A',
     customers: '#7FA6CF',
     stock: '#DDB25C',
-    sales: '#BE92CC',
+    sales: '#7FBF92',
     reports: '#6FC0C0',
   },
 };
@@ -82,6 +82,9 @@ export function buildTheme(mode) {
         },
       },
       MuiChip: { styleOverrides: { root: { fontWeight: 600 } } },
+      MuiToggleButton: {
+        styleOverrides: { root: { textTransform: 'none', fontWeight: 600, paddingInline: 16, borderRadius: 10 } },
+      },
       MuiOutlinedInput: { styleOverrides: { root: { borderRadius: 10 } } },
       MuiDialog: { styleOverrides: { paper: { borderRadius: 16 } } },
       MuiDrawer: { styleOverrides: { paper: { borderRadius: 0 } } },

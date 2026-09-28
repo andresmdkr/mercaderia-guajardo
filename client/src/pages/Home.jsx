@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Grid, Paper, Typography, alpha, useTheme } from '@mui/material';
-import { sections } from '../theme/sections';
+import { flatSections } from '../theme/sections';
 
 function SectionCard({ section }) {
   const theme = useTheme();
@@ -60,7 +60,7 @@ export default function Home() {
       </Typography>
 
       <Grid container spacing={2}>
-        {sections
+        {flatSections
           .filter((section) => section.key !== 'home')
           .map((section) => (
             <Grid key={section.key} size={{ xs: 12, sm: 6, md: 4 }}>

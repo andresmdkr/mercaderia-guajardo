@@ -4,6 +4,7 @@ import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
 import PeopleIcon from '@mui/icons-material/PeopleOutlined';
 
 // Secciones de la app. El color de cada una vive en el tema (palette.sections[key]).
+// Una sección puede tener `children` (subgrupo): se muestran como submenú.
 // Al sumar una pantalla nueva, se agrega acá y aparece en el menú y en la portada.
 export const sections = [
   { key: 'home', label: 'Inicio', path: '/', icon: HomeIcon },
@@ -13,13 +14,15 @@ export const sections = [
     path: '/products',
     icon: InventoryIcon,
     description: 'Alta, edición y stock de tus productos',
-  },
-  {
-    key: 'categories',
-    label: 'Categorías',
-    path: '/categories',
-    icon: CategoryIcon,
-    description: 'Organizá tus productos por rubro',
+    children: [
+      {
+        key: 'categories',
+        label: 'Categorías',
+        path: '/products/categories',
+        icon: CategoryIcon,
+        description: 'Organizá tus productos por rubro',
+      },
+    ],
   },
   {
     key: 'customers',
@@ -30,4 +33,7 @@ export const sections = [
   },
 ];
 
-export const getSection = (key) => sections.find((section) => section.key === key);
+// Lista plana (secciones + subsecciones), para buscar por key o armar la portada.
+export const flatSections = sections.flatMap((section) => [section, ...(section.children ?? [])]);
+
+export const getSection = (key) => flatSections.find((section) => section.key === key);

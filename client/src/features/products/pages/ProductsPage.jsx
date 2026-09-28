@@ -14,6 +14,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import PageHeader from '../../../components/PageHeader';
+import StatusFilter from '../../../components/StatusFilter';
 import { getErrorMessage } from '../../../services/api';
 import { createCategory } from '../../categories/api/categoriesApi';
 import useCategories from '../../categories/hooks/useCategories';
@@ -48,10 +49,13 @@ export default function ProductsPage() {
     return created;
   };
 
-  const handleToggleActive = async (product) => {
+  // Se dispara desde el formulario de edición (botón "Dar de baja" / "Reactivar").
+  const handleToggleActive = async () => {
+    const product = editing;
     try {
       await setProductActive(product.id, !product.active);
       setMessage({ severity: 'success', text: product.active ? 'Producto dado de baja' : 'Producto reactivado' });
+      setEditing(undefined);
       products.reload();
     } catch (error) {
       setMessage({ severity: 'error', text: getErrorMessage(error) });
@@ -109,10 +113,7 @@ export default function ProductsPage() {
           control={<Switch checked={products.lowStock} onChange={(event) => products.setLowStock(event.target.checked)} />}
           label="Solo stock bajo"
         />
-        <FormControlLabel
-          control={<Switch checked={products.showInactive} onChange={(event) => products.setShowInactive(event.target.checked)} />}
-          label="Ver inactivos"
-        />
+        <StatusFilter showInactive={products.showInactive} onChange={products.setShowInactive} />
       </Box>
 
       {products.error && (
@@ -128,7 +129,6 @@ export default function ProductsPage() {
         pageSize={products.pageSize}
         onPageChange={products.setPage}
         onEdit={setEditing}
-        onToggleActive={handleToggleActive}
       />
 
       {editing !== undefined && (
@@ -138,6 +138,7 @@ export default function ProductsPage() {
           onCreateCategory={handleCreateCategory}
           onClose={() => setEditing(undefined)}
           onSubmit={handleSubmit}
+          onToggleActive={handleToggleActive}
         />
       )}
 

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Alert, Box, Button, CircularProgress, FormControlLabel, InputAdornment, Snackbar, Switch, TextField } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, InputAdornment, Snackbar, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import PageHeader from '../../../components/PageHeader';
+import StatusFilter from '../../../components/StatusFilter';
 import { getErrorMessage } from '../../../services/api';
 import { createCustomer, setCustomerActive, updateCustomer } from '../api/customersApi';
 import CustomerForm from '../components/CustomerForm';
@@ -27,10 +28,13 @@ export default function CustomersPage() {
     customers.reload();
   };
 
-  const handleToggleActive = async (customer) => {
+  // Se dispara desde el formulario de edición (botón "Dar de baja" / "Reactivar").
+  const handleToggleActive = async () => {
+    const customer = editing;
     try {
       await setCustomerActive(customer.id, !customer.active);
       setMessage({ severity: 'success', text: customer.active ? 'Cliente dado de baja' : 'Cliente reactivado' });
+      setEditing(undefined);
       customers.reload();
     } catch (error) {
       setMessage({ severity: 'error', text: getErrorMessage(error) });
@@ -69,10 +73,7 @@ export default function CustomersPage() {
             },
           }}
         />
-        <FormControlLabel
-          control={<Switch checked={customers.showInactive} onChange={(event) => customers.setShowInactive(event.target.checked)} />}
-          label="Ver inactivos"
-        />
+        <StatusFilter showInactive={customers.showInactive} onChange={customers.setShowInactive} />
       </Box>
 
       {customers.error && (
@@ -88,10 +89,16 @@ export default function CustomersPage() {
         pageSize={customers.pageSize}
         onPageChange={customers.setPage}
         onEdit={setEditing}
-        onToggleActive={handleToggleActive}
       />
 
-      {editing !== undefined && <CustomerForm customer={editing} onClose={() => setEditing(undefined)} onSubmit={handleSubmit} />}
+      {editing !== undefined && (
+        <CustomerForm
+          customer={editing}
+          onClose={() => setEditing(undefined)}
+          onSubmit={handleSubmit}
+          onToggleActive={handleToggleActive}
+        />
+      )}
 
       <Snackbar open={Boolean(message)} autoHideDuration={3000} onClose={() => setMessage(null)}>
         {message ? <Alert severity={message.severity}>{message.text}</Alert> : undefined}

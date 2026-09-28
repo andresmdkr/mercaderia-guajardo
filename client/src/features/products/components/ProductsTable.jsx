@@ -1,6 +1,5 @@
 import {
   Chip,
-  IconButton,
   Paper,
   Table,
   TableBody,
@@ -9,15 +8,12 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  Tooltip,
   Typography,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import BlockIcon from '@mui/icons-material/Block';
-import RestoreIcon from '@mui/icons-material/Restore';
 import { formatMoney } from '../../../utils/format';
 
-export default function ProductsTable({ items, total, page, pageSize, onPageChange, onEdit, onToggleActive }) {
+// Hacer clic en una fila abre el producto para editarlo (o darlo de baja).
+export default function ProductsTable({ items, total, page, pageSize, onPageChange, onEdit }) {
   return (
     <Paper>
       <TableContainer>
@@ -31,13 +27,12 @@ export default function ProductsTable({ items, total, page, pageSize, onPageChan
               <TableCell align="right">Venta</TableCell>
               <TableCell align="right">Stock</TableCell>
               <TableCell align="right">Mínimo</TableCell>
-              <TableCell align="right">Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={7} align="center">
                   <Typography color="text.secondary" sx={{ py: 3 }}>
                     No hay productos para mostrar
                   </Typography>
@@ -45,9 +40,12 @@ export default function ProductsTable({ items, total, page, pageSize, onPageChan
               </TableRow>
             )}
             {items.map((product) => (
-              <TableRow key={product.id} hover>
+              <TableRow key={product.id} hover onClick={() => onEdit(product)} sx={{ cursor: 'pointer' }}>
                 <TableCell>{product.code}</TableCell>
-                <TableCell>{product.name}</TableCell>
+                <TableCell>
+                  {product.name}
+                  {!product.active && <Chip size="small" label="De baja" sx={{ ml: 1 }} />}
+                </TableCell>
                 <TableCell>{product.category?.name ?? '—'}</TableCell>
                 <TableCell align="right">{formatMoney(product.costPrice)}</TableCell>
                 <TableCell align="right">{formatMoney(product.salePrice)}</TableCell>
@@ -59,18 +57,6 @@ export default function ProductsTable({ items, total, page, pageSize, onPageChan
                   />
                 </TableCell>
                 <TableCell align="right">{product.minStock}</TableCell>
-                <TableCell align="right">
-                  <Tooltip title="Editar">
-                    <IconButton size="small" onClick={() => onEdit(product)}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={product.active ? 'Dar de baja' : 'Reactivar'}>
-                    <IconButton size="small" onClick={() => onToggleActive(product)}>
-                      {product.active ? <BlockIcon fontSize="small" /> : <RestoreIcon fontSize="small" />}
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>

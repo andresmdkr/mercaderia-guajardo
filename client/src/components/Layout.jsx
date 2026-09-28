@@ -5,6 +5,7 @@ import {
   AppBar,
   Box,
   Button,
+  Collapse,
   Container,
   Drawer,
   IconButton,
@@ -25,30 +26,49 @@ import ThemeToggle from './ThemeToggle';
 
 const DRAWER_WIDTH = 252;
 
-function NavItem({ section, onNavigate }) {
+function NavItem({ section, onNavigate, nested = false }) {
   const theme = useTheme();
   const { pathname } = useLocation();
   const color = theme.palette.sections[section.key];
-  const selected = section.path === '/' ? pathname === '/' : pathname.startsWith(section.path);
   const Icon = section.icon;
+  const hasChildren = Boolean(section.children?.length);
+
+  // Un grupo con submenú se marca solo cuando estás en su página principal;
+  // estando en un hijo, el grupo queda desplegado y se marca el hijo.
+  let selected = pathname.startsWith(section.path);
+  if (section.path === '/' || hasChildren) selected = pathname === section.path;
+  const expanded = hasChildren && pathname.startsWith(section.path);
 
   return (
-    <ListItemButton
-      component={NavLink}
-      to={section.path}
-      onClick={onNavigate}
-      selected={selected}
-      sx={{
-        borderRadius: 2.5,
-        mb: 0.5,
-        '&.Mui-selected': { bgcolor: alpha(color, 0.14), '&:hover': { bgcolor: alpha(color, 0.2) } },
-      }}
-    >
-      <ListItemIcon sx={{ minWidth: 38, color }}>
-        <Icon fontSize="small" />
-      </ListItemIcon>
-      <ListItemText primary={section.label} slotProps={{ primary: { fontSize: 14.5, fontWeight: selected ? 600 : 500 } }} />
-    </ListItemButton>
+    <>
+      <ListItemButton
+        component={NavLink}
+        to={section.path}
+        onClick={onNavigate}
+        selected={selected}
+        sx={{
+          borderRadius: 2.5,
+          mb: 0.5,
+          pl: nested ? 4.5 : 2,
+          '&.Mui-selected': { bgcolor: alpha(color, 0.14), '&:hover': { bgcolor: alpha(color, 0.2) } },
+        }}
+      >
+        <ListItemIcon sx={{ minWidth: 38, color }}>
+          <Icon fontSize="small" />
+        </ListItemIcon>
+        <ListItemText primary={section.label} slotProps={{ primary: { fontSize: 14.5, fontWeight: selected ? 600 : 500 } }} />
+      </ListItemButton>
+
+      {hasChildren && (
+        <Collapse in={expanded} timeout="auto" unmountOnExit>
+          <List disablePadding>
+            {section.children.map((child) => (
+              <NavItem key={child.key} section={child} onNavigate={onNavigate} nested />
+            ))}
+          </List>
+        </Collapse>
+      )}
+    </>
   );
 }
 

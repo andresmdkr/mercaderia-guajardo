@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   Alert,
   Autocomplete,
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -11,6 +12,7 @@ import {
   TextField,
   createFilterOptions,
 } from '@mui/material';
+import ActiveToggleButton from '../../../components/ActiveToggleButton';
 import { getErrorMessage } from '../../../services/api';
 
 const emptyValues = { code: '', name: '', costPrice: '', salePrice: '', minStock: '0' };
@@ -39,7 +41,7 @@ function validate(values) {
 }
 
 // Se monta solo cuando el diálogo está abierto, así el estado arranca limpio cada vez.
-export default function ProductForm({ product, categories, onCreateCategory, onClose, onSubmit }) {
+export default function ProductForm({ product, categories, onCreateCategory, onClose, onSubmit, onToggleActive }) {
   const [values, setValues] = useState(() => toFormValues(product));
   const [category, setCategory] = useState(product?.category ?? null);
   const [errors, setErrors] = useState({});
@@ -144,6 +146,17 @@ export default function ProductForm({ product, categories, onCreateCategory, onC
         </Grid>
       </DialogContent>
       <DialogActions>
+        {product && (
+          <>
+            <ActiveToggleButton
+              active={product.active}
+              description={`el producto "${product.name}"`}
+              onToggle={onToggleActive}
+              disabled={saving}
+            />
+            <Box sx={{ flexGrow: 1 }} />
+          </>
+        )}
         <Button onClick={onClose} disabled={saving}>
           Cancelar
         </Button>
