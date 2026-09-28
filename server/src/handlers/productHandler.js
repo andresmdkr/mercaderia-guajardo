@@ -29,11 +29,15 @@ function validateProductBody(body) {
 
   const code = typeof body.code === 'string' ? body.code.trim() : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';
-  const category = typeof body.category === 'string' ? body.category.trim() : '';
 
   if (!code || code.length > 50) throw new AppError('El código es obligatorio (máx. 50 caracteres)');
   if (!name || name.length > 150) throw new AppError('El nombre es obligatorio (máx. 150 caracteres)');
-  if (category.length > 100) throw new AppError('La categoría admite hasta 100 caracteres');
+
+  // La categoría es opcional: null o vacío = sin categoría.
+  const categoryId = body.categoryId == null || body.categoryId === '' ? null : Number(body.categoryId);
+  if (categoryId !== null && (!Number.isInteger(categoryId) || categoryId <= 0)) {
+    throw new AppError('Categoría inválida');
+  }
 
   const costPrice = Number(body.costPrice);
   const salePrice = Number(body.salePrice);
@@ -46,7 +50,7 @@ function validateProductBody(body) {
   return {
     code,
     name,
-    category: category || null,
+    categoryId,
     costPrice: Math.round(costPrice * 100) / 100,
     salePrice: Math.round(salePrice * 100) / 100,
     minStock,
@@ -55,12 +59,12 @@ function validateProductBody(body) {
 
 async function list(req, res, next) {
   try {
-    const { page, limit, search, category, lowStock, active } = req.query;
+    const { page, limit, search, categoryId, lowStock, active } = req.query;
     const result = await productController.list({
       page: toPositiveInt(page, 1),
       limit: Math.min(toPositiveInt(limit, 20), MAX_LIMIT),
       search: search?.trim(),
-      category: category?.trim(),
+      categoryId: toPositiveInt(categoryId, undefined),
       lowStock: parseBool(lowStock),
       active: parseBool(active),
     });

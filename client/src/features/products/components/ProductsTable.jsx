@@ -48,7 +48,7 @@ export default function ProductsTable({ items, total, page, pageSize, onPageChan
               <TableRow key={product.id} hover>
                 <TableCell>{product.code}</TableCell>
                 <TableCell>{product.name}</TableCell>
-                <TableCell>{product.category ?? '—'}</TableCell>
+                <TableCell>{product.category?.name ?? '—'}</TableCell>
                 <TableCell align="right">{formatMoney(product.costPrice)}</TableCell>
                 <TableCell align="right">{formatMoney(product.salePrice)}</TableCell>
                 <TableCell align="right">

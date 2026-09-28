@@ -9,6 +9,7 @@ const SEARCH_DELAY_MS = 350;
 export default function useProducts() {
   const [search, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [categoryId, setCategoryIdFilter] = useState('');
   const [lowStock, setLowStockFilter] = useState(false);
   const [showInactive, setShowInactiveFilter] = useState(false);
   const [page, setPage] = useState(1);
@@ -36,6 +37,7 @@ export default function useProducts() {
           page,
           limit: PAGE_SIZE,
           search: debouncedSearch || undefined,
+          categoryId: categoryId || undefined,
           lowStock: lowStock || undefined,
           active: !showInactive,
         });
@@ -54,7 +56,12 @@ export default function useProducts() {
     return () => {
       cancelled = true;
     };
-  }, [page, debouncedSearch, lowStock, showInactive, reloadKey]);
+  }, [page, debouncedSearch, categoryId, lowStock, showInactive, reloadKey]);
+
+  const setCategoryId = (value) => {
+    setCategoryIdFilter(value);
+    setPage(1);
+  };
 
   const setLowStock = (value) => {
     setLowStockFilter(value);
@@ -76,9 +83,11 @@ export default function useProducts() {
     loading,
     error,
     search,
+    categoryId,
     lowStock,
     showInactive,
     setSearch: setSearchText,
+    setCategoryId,
     setLowStock,
     setShowInactive,
     setPage,

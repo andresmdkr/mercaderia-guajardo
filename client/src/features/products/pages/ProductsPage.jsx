@@ -6,6 +6,7 @@ import {
   CircularProgress,
   FormControlLabel,
   InputAdornment,
+  MenuItem,
   Snackbar,
   Switch,
   TextField,
@@ -14,6 +15,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import { getErrorMessage } from '../../../services/api';
+import { createCategory } from '../../categories/api/categoriesApi';
+import useCategories from '../../categories/hooks/useCategories';
 import { createProduct, setProductActive, updateProduct } from '../api/productsApi';
 import useProducts from '../hooks/useProducts';
 import ProductForm from '../components/ProductForm';
@@ -21,6 +24,7 @@ import ProductsTable from '../components/ProductsTable';
 
 export default function ProductsPage() {
   const products = useProducts();
+  const categories = useCategories();
   // undefined = diálogo cerrado, null = alta, objeto = edición
   const [editing, setEditing] = useState(undefined);
   const [message, setMessage] = useState(null);
@@ -35,6 +39,13 @@ export default function ProductsPage() {
     }
     setEditing(undefined);
     products.reload();
+  };
+
+  // Crear una categoría desde el formulario de producto; devuelve la nueva para seleccionarla.
+  const handleCreateCategory = async (name) => {
+    const created = await createCategory(name);
+    categories.reload();
+    return created;
   };
 
   const handleToggleActive = async (product) => {
@@ -76,6 +87,21 @@ export default function ProductsPage() {
             },
           }}
         />
+        <TextField
+          select
+          size="small"
+          label="Categoría"
+          value={products.categoryId}
+          onChange={(event) => products.setCategoryId(event.target.value)}
+          sx={{ minWidth: 200, bgcolor: 'background.paper' }}
+        >
+          <MenuItem value="">Todas</MenuItem>
+          {categories.categories.map((category) => (
+            <MenuItem key={category.id} value={category.id}>
+              {category.name}
+            </MenuItem>
+          ))}
+        </TextField>
         <FormControlLabel
           control={<Switch checked={products.lowStock} onChange={(event) => products.setLowStock(event.target.checked)} />}
           label="Solo stock bajo"
@@ -103,7 +129,13 @@ export default function ProductsPage() {
       />
 
       {editing !== undefined && (
-        <ProductForm product={editing} onClose={() => setEditing(undefined)} onSubmit={handleSubmit} />
+        <ProductForm
+          product={editing}
+          categories={categories.categories}
+          onCreateCategory={handleCreateCategory}
+          onClose={() => setEditing(undefined)}
+          onSubmit={handleSubmit}
+        />
       )}
 
       <Snackbar open={Boolean(message)} autoHideDuration={3000} onClose={() => setMessage(null)}>

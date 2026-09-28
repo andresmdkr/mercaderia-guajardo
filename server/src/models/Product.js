@@ -16,7 +16,6 @@ module.exports = (sequelize) =>
     {
       code: { type: DataTypes.STRING(50), allowNull: false, unique: true },
       name: { type: DataTypes.STRING(150), allowNull: false },
-      category: { type: DataTypes.STRING(100), allowNull: true },
       costPrice: money('costPrice'),
       salePrice: money('salePrice'),
       stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
