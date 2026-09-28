@@ -30,6 +30,8 @@ const sectionColors = {
 const palettes = {
   light: {
     primary: { main: '#C15F3C', contrastText: '#FFFFFF' },
+    // El naranja por defecto de MUI tiene poco contraste con texto blanco: se oscurece.
+    warning: { main: '#B45309', contrastText: '#FFFFFF' },
     background: { default: '#FAF9F5', paper: '#FFFFFF' },
     text: { primary: '#29261B', secondary: '#6B6558' },
     divider: '#E6E3D8',
@@ -37,6 +39,7 @@ const palettes = {
   },
   dark: {
     primary: { main: '#D97757', contrastText: '#1F1E1D' },
+    warning: { main: '#F0A93A', contrastText: '#1F1E1D' },
     background: { default: '#262624', paper: '#30302E' },
     text: { primary: '#FAF9F5', secondary: '#A6A39A' },
     divider: '#403F3B',

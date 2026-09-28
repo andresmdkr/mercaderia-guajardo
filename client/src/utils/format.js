@@ -1,7 +1,21 @@
 const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const dateTime = new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' });
 
+const compactCurrency = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  notation: 'compact',
+  compactDisplay: 'long', // "20 mil" en vez de "20 k"
+  maximumFractionDigits: 1,
+});
+const integer = new Intl.NumberFormat('es-AR');
+
 export const formatMoney = (value) => currency.format(value);
+
+// Para ejes de gráficos: $ 12 mil, $ 1,5 M
+export const formatCompactMoney = (value) => compactCurrency.format(value);
+
+export const formatInteger = (value) => integer.format(value);
 
 // Número de venta con ceros a la izquierda: 12 → "#0012"
 export const formatSaleNumber = (id) => `#${String(id).padStart(4, '0')}`;

@@ -1,3 +1,4 @@
+import AssessmentIcon from '@mui/icons-material/AssessmentOutlined';
 import CategoryIcon from '@mui/icons-material/CategoryOutlined';
 import HomeIcon from '@mui/icons-material/HomeOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
@@ -47,6 +48,13 @@ export const sections = [
     path: '/customers',
     icon: PeopleIcon,
     description: 'Tus clientes y sus datos de contacto',
+  },
+  {
+    key: 'reports',
+    label: 'Reportes',
+    path: '/reports',
+    icon: AssessmentIcon,
+    description: 'Lo más vendido, ganancias y productos por reponer',
   },
   {
     key: 'settings',
