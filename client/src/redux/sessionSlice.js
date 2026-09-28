@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { getErrorMessage } from '../services/api';
-import { fetchCurrentUser, loginRequest, logoutRequest } from '../services/authService';
+import { fetchCurrentUser, loginRequest, logoutRequest, setupRequest } from '../services/authService';
 
 // status: 'checking' (todavía no sabemos si hay sesión) | 'authenticated' | 'anonymous'
 const initialState = { user: null, status: 'checking' };
@@ -10,6 +10,15 @@ export const checkSession = createAsyncThunk('session/check', () => fetchCurrent
 export const login = createAsyncThunk('session/login', async ({ username, password }, { rejectWithValue }) => {
   try {
     return await loginRequest(username, password);
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error));
+  }
+});
+
+// Primer uso: crea el administrador y queda con la sesión iniciada.
+export const setup = createAsyncThunk('session/setup', async (data, { rejectWithValue }) => {
+  try {
+    return await setupRequest(data);
   } catch (error) {
     return rejectWithValue(getErrorMessage(error));
   }
@@ -38,6 +47,10 @@ const sessionSlice = createSlice({
         state.status = 'anonymous';
       })
       .addCase(login.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.status = 'authenticated';
+      })
+      .addCase(setup.fulfilled, (state, action) => {
         state.user = action.payload;
         state.status = 'authenticated';
       })

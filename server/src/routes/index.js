@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const appHandler = require('../handlers/appHandler');
 const authRoutes = require('./authRoutes');
 const categoryRoutes = require('./categoryRoutes');
 const customerRoutes = require('./customerRoutes');
@@ -11,6 +12,7 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = Router();
 
+router.get('/version', appHandler.getVersion);
 router.use('/auth', authRoutes);
 router.use('/categories', requireAuth, categoryRoutes);
 router.use('/customers', requireAuth, customerRoutes);
