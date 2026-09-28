@@ -9,7 +9,9 @@
     "migrate": "sequelize-cli db:migrate",
     "migrate:undo": "sequelize-cli db:migrate:undo",
     "create-user": "node src/scripts/createUser.js",
-    "seed": "node src/scripts/seed.js"
+    "seed": "node src/scripts/seed.js",
+    "backup": "node src/scripts/backup.js",
+    "restore": "node src/scripts/restore.js"
   },
   "keywords": [],
   "author": "",
