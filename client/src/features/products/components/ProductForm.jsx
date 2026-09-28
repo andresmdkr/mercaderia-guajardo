@@ -1,0 +1,109 @@
+import { useState } from 'react';
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField } from '@mui/material';
+import { getErrorMessage } from '../../../services/api';
+
+const emptyValues = { code: '', name: '', category: '', costPrice: '', salePrice: '', minStock: '0' };
+
+function toFormValues(product) {
+  if (!product) return emptyValues;
+  return {
+    code: product.code,
+    name: product.name,
+    category: product.category ?? '',
+    costPrice: String(product.costPrice),
+    salePrice: String(product.salePrice),
+    minStock: String(product.minStock),
+  };
+}
+
+// Validación para dar feedback rápido; el backend vuelve a validar todo.
+function validate(values) {
+  const errors = {};
+  if (!values.code.trim()) errors.code = 'Obligatorio';
+  if (!values.name.trim()) errors.name = 'Obligatorio';
+  if (values.costPrice === '' || Number(values.costPrice) < 0) errors.costPrice = 'Debe ser 0 o más';
+  if (values.salePrice === '' || Number(values.salePrice) < 0) errors.salePrice = 'Debe ser 0 o más';
+  if (!Number.isInteger(Number(values.minStock)) || Number(values.minStock) < 0) errors.minStock = 'Entero de 0 o más';
+  return errors;
+}
+
+// Se monta solo cuando el diálogo está abierto, así el estado arranca limpio cada vez.
+export default function ProductForm({ product, onClose, onSubmit }) {
+  const [values, setValues] = useState(() => toFormValues(product));
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = (field) => (event) => setValues((prev) => ({ ...prev, [field]: event.target.value }));
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const found = validate(values);
+    setErrors(found);
+    if (Object.keys(found).length > 0) return;
+
+    setSaving(true);
+    setServerError(null);
+    try {
+      await onSubmit({
+        code: values.code.trim(),
+        name: values.name.trim(),
+        category: values.category.trim(),
+        costPrice: Number(values.costPrice),
+        salePrice: Number(values.salePrice),
+        minStock: Number(values.minStock),
+      });
+    } catch (error) {
+      setServerError(getErrorMessage(error));
+      setSaving(false);
+    }
+  };
+
+  const field = (name, label, extra = {}) => (
+    <TextField
+      label={label}
+      value={values[name]}
+      onChange={handleChange(name)}
+      error={Boolean(errors[name])}
+      helperText={errors[name]}
+      fullWidth
+      size="small"
+      {...extra}
+    />
+  );
+
+  return (
+    <Dialog open onClose={saving ? undefined : onClose} fullWidth maxWidth="sm" component="form" onSubmit={handleSubmit}>
+      <DialogTitle>{product ? 'Editar producto' : 'Nuevo producto'}</DialogTitle>
+      <DialogContent>
+        {serverError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {serverError}
+          </Alert>
+        )}
+        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+          <Grid size={{ xs: 12, sm: 4 }}>{field('code', 'Código', { autoFocus: true })}</Grid>
+          <Grid size={{ xs: 12, sm: 8 }}>{field('name', 'Nombre')}</Grid>
+          <Grid size={12}>{field('category', 'Categoría')}</Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            {field('costPrice', 'Precio de costo', { type: 'number', slotProps: { htmlInput: { min: 0, step: '0.01' } } })}
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            {field('salePrice', 'Precio de venta', { type: 'number', slotProps: { htmlInput: { min: 0, step: '0.01' } } })}
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            {field('minStock', 'Stock mínimo', { type: 'number', slotProps: { htmlInput: { min: 0, step: 1 } } })}
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={saving}>
+          Cancelar
+        </Button>
+        <Button type="submit" variant="contained" disabled={saving}>
+          Guardar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}

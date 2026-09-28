@@ -1,0 +1,114 @@
+import { useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  FormControlLabel,
+  InputAdornment,
+  Snackbar,
+  Switch,
+  TextField,
+  Typography,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import { getErrorMessage } from '../../../services/api';
+import { createProduct, setProductActive, updateProduct } from '../api/productsApi';
+import useProducts from '../hooks/useProducts';
+import ProductForm from '../components/ProductForm';
+import ProductsTable from '../components/ProductsTable';
+
+export default function ProductsPage() {
+  const products = useProducts();
+  // undefined = diálogo cerrado, null = alta, objeto = edición
+  const [editing, setEditing] = useState(undefined);
+  const [message, setMessage] = useState(null);
+
+  const handleSubmit = async (values) => {
+    if (editing) {
+      await updateProduct(editing.id, values);
+      setMessage({ severity: 'success', text: 'Producto actualizado' });
+    } else {
+      await createProduct(values);
+      setMessage({ severity: 'success', text: 'Producto creado' });
+    }
+    setEditing(undefined);
+    products.reload();
+  };
+
+  const handleToggleActive = async (product) => {
+    try {
+      await setProductActive(product.id, !product.active);
+      setMessage({ severity: 'success', text: product.active ? 'Producto dado de baja' : 'Producto reactivado' });
+      products.reload();
+    } catch (error) {
+      setMessage({ severity: 'error', text: getErrorMessage(error) });
+    }
+  };
+
+  return (
+    <>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
+        <Typography variant="h5" sx={{ flexGrow: 1 }}>
+          Productos
+        </Typography>
+        {products.loading && <CircularProgress size={22} />}
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>
+          Nuevo producto
+        </Button>
+      </Box>
+
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, mb: 2 }}>
+        <TextField
+          size="small"
+          placeholder="Buscar por código o nombre"
+          value={products.search}
+          onChange={(event) => products.setSearch(event.target.value)}
+          sx={{ minWidth: 280, bgcolor: 'background.paper' }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+        <FormControlLabel
+          control={<Switch checked={products.lowStock} onChange={(event) => products.setLowStock(event.target.checked)} />}
+          label="Solo stock bajo"
+        />
+        <FormControlLabel
+          control={<Switch checked={products.showInactive} onChange={(event) => products.setShowInactive(event.target.checked)} />}
+          label="Ver inactivos"
+        />
+      </Box>
+
+      {products.error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {products.error}
+        </Alert>
+      )}
+
+      <ProductsTable
+        items={products.items}
+        total={products.total}
+        page={products.page}
+        pageSize={products.pageSize}
+        onPageChange={products.setPage}
+        onEdit={setEditing}
+        onToggleActive={handleToggleActive}
+      />
+
+      {editing !== undefined && (
+        <ProductForm product={editing} onClose={() => setEditing(undefined)} onSubmit={handleSubmit} />
+      )}
+
+      <Snackbar open={Boolean(message)} autoHideDuration={3000} onClose={() => setMessage(null)}>
+        {message ? <Alert severity={message.severity}>{message.text}</Alert> : undefined}
+      </Snackbar>
+    </>
+  );
+}
