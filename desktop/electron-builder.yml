@@ -1,0 +1,46 @@
+# Instalador de Windows de 32 bits: también corre en Windows de 64 bits.
+# Electron 22 es la última versión que funciona en Windows 8.1.
+appId: com.mercaderiaguajardo.app
+productName: Mercadería Guajardo
+copyright: Mercadería Guajardo
+
+directories:
+  output: dist
+
+files:
+  - package.json
+  - src/**/*
+
+# El binario de SQLite (módulo nativo) tiene que quedar fuera del paquete asar para poder cargarse.
+asar: true
+asarUnpack:
+  - node_modules/sqlite3/**
+
+# El módulo nativo de SQLite se instala ya compilado para 32 bits (ver el flujo de GitHub Actions),
+# por eso no se recompila al empaquetar.
+npmRebuild: false
+
+win:
+  executableName: MercaderiaGuajardo
+  target:
+    - target: nsis
+      arch:
+        - ia32
+  artifactName: MercaderiaGuajardo-Setup-${version}.exe
+
+nsis:
+  oneClick: true # instalación en un paso, sin preguntas
+  perMachine: false # instala solo para el usuario: no pide permisos de administrador
+  allowElevation: false
+  deleteAppDataOnUninstall: false # desinstalar NO borra los datos del negocio
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Mercadería Guajardo
+  runAfterFinish: true
+
+# De acá busca actualizaciones la aplicación instalada (repositorio público).
+publish:
+  provider: github
+  owner: andresmdkr
+  repo: mercaderia-guajardo
+  releaseType: release

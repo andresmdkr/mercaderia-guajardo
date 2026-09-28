@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'" />
+    <title>Mercadería Guajardo — prueba de compatibilidad</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Mercadería Guajardo</h1>
+        <p class="subtitle">Prueba de compatibilidad · versión <strong id="version">…</strong></p>
+      </header>
+
+      <section id="banner" class="banner checking" role="status" aria-live="polite">
+        <div class="banner-icon" id="banner-icon">…</div>
+        <div>
+          <h2 id="banner-title">Revisando tu computadora…</h2>
+          <p id="banner-text">Esto tarda unos segundos.</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Revisiones</h3>
+        <ul id="checks" class="checks"></ul>
+      </section>
+
+      <section class="card">
+        <h3>Actualizaciones</h3>
+        <p id="update-message" class="update-message">…</p>
+        <div class="buttons">
+          <button id="btn-check" type="button">Buscar actualizaciones ahora</button>
+          <button id="btn-install" type="button" class="primary" hidden>Instalar y reiniciar</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Informe</h3>
+        <p class="hint">Si algo sale mal, tocá el botón y pegá el informe en el chat. Así puedo ver exactamente qué pasó.</p>
+        <div class="buttons">
+          <button id="btn-copy" type="button" class="primary">Copiar informe</button>
+          <span id="copy-result" class="copy-result" aria-live="polite"></span>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
