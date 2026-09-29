@@ -3,8 +3,10 @@ import { Alert, Box } from '@mui/material';
 import PageHeader from '../../../components/PageHeader';
 import PeriodFilter from '../../../components/PeriodFilter';
 import usePeriod from '../../../hooks/usePeriod';
+import PaymentMethodsCard from '../components/PaymentMethodsCard';
 import LowStockTable from '../components/LowStockTable';
 import SummaryTiles from '../components/SummaryTiles';
+import TopCustomersTable from '../components/TopCustomersTable';
 import TopProductsChart from '../components/TopProductsChart';
 import useLowStock from '../hooks/useLowStock';
 import useSalesReport from '../hooks/useSalesReport';
@@ -33,6 +35,11 @@ export default function ReportsPage() {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <SummaryTiles summary={report.summary} loading={report.loading} />
         <TopProductsChart rows={report.topProducts} sort={sort} onSortChange={setSort} loading={report.loading} />
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3, alignItems: 'start' }}>
+          <PaymentMethodsCard rows={report.paymentMethods} loading={report.loading} />
+          <TopCustomersTable data={report.topCustomers} loading={report.loading} />
+        </Box>
 
         {lowStock.error && <Alert severity="error">{lowStock.error}</Alert>}
         <LowStockTable

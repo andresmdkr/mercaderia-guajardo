@@ -52,4 +52,20 @@ async function lowStock(req, res, next) {
   }
 }
 
-module.exports = { summary, topProducts, lowStock };
+async function paymentMethods(req, res, next) {
+  try {
+    res.json(await reportController.paymentMethods(parsePeriod(req.query)));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function topCustomers(req, res, next) {
+  try {
+    res.json(await reportController.topCustomers({ ...parsePeriod(req.query), limit: Math.min(toPositiveInt(req.query.limit, 10), MAX_TOP) }));
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers };

@@ -101,6 +101,51 @@ async function topProducts({ from, to, limit, sort }) {
   }));
 }
 
+// Ventas y total cobrado por medio de pago (de mayor a menor total).
+async function paymentMethods({ from, to }) {
+  const { sql, replacements } = periodFilter(from, to);
+  const rows = await sequelize.query(
+    `SELECT s.payment_method AS method, COUNT(*) AS salesCount, SUM(s.total) AS total
+     FROM sales s
+     WHERE ${sql}
+     GROUP BY s.payment_method
+     ORDER BY total DESC`,
+    { replacements, type: QueryTypes.SELECT }
+  );
+  return rows.map((row) => ({ method: row.method, salesCount: Number(row.salesCount), total: money(row.total) }));
+}
+
+// Clientes que más compraron (por total cobrado). Las ventas sin cliente asignado se informan aparte.
+async function topCustomers({ from, to, limit }) {
+  const { sql, replacements } = periodFilter(from, to);
+  const rows = await sequelize.query(
+    `SELECT c.id AS customerId, c.name AS name, c.phone AS phone, COUNT(*) AS salesCount, SUM(s.total) AS total
+     FROM sales s
+     JOIN customers c ON c.id = s.customer_id
+     WHERE ${sql}
+     GROUP BY c.id, c.name, c.phone
+     ORDER BY total DESC, salesCount DESC, c.name ASC
+     LIMIT :limit`,
+    { replacements: { ...replacements, limit }, type: QueryTypes.SELECT }
+  );
+  const [anonymous] = await sequelize.query(
+    `SELECT COUNT(*) AS salesCount, COALESCE(SUM(s.total), 0) AS total
+     FROM sales s
+     WHERE ${sql} AND s.customer_id IS NULL`,
+    { replacements, type: QueryTypes.SELECT }
+  );
+  return {
+    items: rows.map((row) => ({
+      customerId: row.customerId,
+      name: row.name,
+      phone: row.phone,
+      salesCount: Number(row.salesCount),
+      total: money(row.total),
+    })),
+    withoutCustomer: { salesCount: Number(anonymous.salesCount), total: money(anonymous.total) },
+  };
+}
+
 // Productos activos con stock igual o menor al mínimo; primero los más urgentes (los que más faltan).
 async function lowStock({ page, limit }) {
   const { rows, count } = await Product.findAndCountAll({
@@ -117,4 +162,4 @@ async function lowStock({ page, limit }) {
   return { items: rows, total: count, page, pages: Math.ceil(count / limit) };
 }
 
-module.exports = { summary, topProducts, lowStock };
+module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers };
