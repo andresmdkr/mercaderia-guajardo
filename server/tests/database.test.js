@@ -174,3 +174,74 @@ describe('base de datos SQLite', () => {
     });
   });
 });
+
+describe('copias de seguridad desde la aplicación', () => {
+  it('lista y crea copias por la API, reconoce su tipo e ignora archivos ajenos', async () => {
+    const server = await startTestServer();
+    try {
+      const api = server.client();
+      assert.equal((await api.get('/api/backups')).status, 401, 'exige sesión');
+      await loginAsAdmin(api);
+      await product(api, 'B1', 10, 5, 3);
+
+      const empty = (await api.get('/api/backups')).data;
+      assert.deepEqual(empty.items, []);
+      assert.equal(path.resolve(empty.folder), path.resolve(server.backupDir));
+
+      const created = await api.post('/api/backups');
+      assert.equal(created.status, 201);
+      assert.equal(created.data.kind, 'manual');
+      assert.match(created.data.name, /^mercaderia_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlite$/);
+      assert.ok(created.data.size > 0);
+
+      // Archivos con etiqueta se reconocen; los que no siguen el formato se ignoran.
+      fs.copyFileSync(path.join(server.backupDir, created.data.name), path.join(server.backupDir, 'mercaderia_2026-01-01_10-00-00_automatico.sqlite'));
+      fs.copyFileSync(path.join(server.backupDir, created.data.name), path.join(server.backupDir, 'mercaderia_2026-01-01_09-00-00_antes-de-migrar.sqlite'));
+      fs.writeFileSync(path.join(server.backupDir, 'otro-archivo.sqlite'), 'x');
+      fs.writeFileSync(path.join(server.backupDir, 'mercaderia_2025-01-01_10-00-00.dump'), 'x');
+
+      const list = (await api.get('/api/backups')).data.items;
+      assert.equal(list.length, 3);
+      assert.deepEqual(list.map((b) => b.kind).sort(), ['antes-de-migrar', 'automatico', 'manual']);
+      assert.equal(list[0].name, created.data.name, 'la más nueva primero');
+
+      const { openDatabase } = require('./helpers/testServer');
+      const copy = openDatabase(path.join(server.backupDir, created.data.name));
+      assert.equal((await copy.get('SELECT stock FROM products WHERE code = ?', ['B1'])).stock, 3, 'la copia tiene los datos');
+      await copy.close();
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('el backup automático hace uno por día, no repite antes de tiempo y conserva los últimos', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mg-auto-'));
+    try {
+      const result = runScript('tests/helpers/auto-backup-check.js', [], { DB_FILE: path.join(dir, 'a.sqlite'), BACKUP_DIR: path.join(dir, 'backups') });
+      assert.equal(result.status, 0, result.stderr);
+      const outcome = JSON.parse(/RESULTADO (.*)/.exec(result.stdout)[1]);
+      assert.equal(outcome.firstCreated, true, 'sin backups previos, hace uno');
+      assert.equal(outcome.firstKind, 'automatico');
+      assert.equal(outcome.secondSkipped, true, 'recién hecho: no vuelve a hacer');
+      assert.equal(outcome.thirdCreated, true, 'pasó más de un día: hace otro');
+      assert.equal(outcome.remaining, 2, 'conserva solo los últimos 2 (keep = 2)');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('informa la versión que define la app de escritorio (APP_VERSION) o, si no, la del servidor', async () => {
+    const withEnv = await startTestServer({ APP_VERSION: '9.8.7' });
+    try {
+      assert.equal((await withEnv.client().get('/api/version')).data.version, '9.8.7');
+    } finally {
+      await withEnv.close();
+    }
+    const without = await startTestServer({ APP_VERSION: '' });
+    try {
+      assert.match((await without.client().get('/api/version')).data.version, /^\d+\.\d+\.\d+$/);
+    } finally {
+      await without.close();
+    }
+  });
+});

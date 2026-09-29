@@ -7,9 +7,8 @@ require('dotenv').config();
 const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline');
-const sqlite3 = require('sqlite3');
 const { DB_FILE, sequelize } = require('../db');
-const { backupDir, createBackup, formatSize, listBackups, looksLikeSqlite } = require('../utils/backupTools');
+const { backupDir, checkBackupFile, createBackup, formatSize, listBackups, replaceDatabaseFile } = require('../utils/backupTools');
 
 function ask(question) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -26,26 +25,6 @@ function resolveBackupFile(input) {
   return [path.resolve(input), path.join(backupDir(), input)].find((candidate) => fs.existsSync(candidate));
 }
 
-// Abre el backup en modo solo lectura y comprueba que la base esté sana y tenga las tablas del negocio.
-function checkBackup(file) {
-  return new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(file, sqlite3.OPEN_READONLY, (openError) => {
-      if (openError) return reject(new Error(`No se pudo abrir el backup: ${openError.message}`));
-      db.get('PRAGMA integrity_check', (error, row) => {
-        if (error || row.integrity_check !== 'ok') {
-          db.close();
-          return reject(new Error('El backup está dañado (falló la verificación de integridad)'));
-        }
-        db.get("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name IN ('products', 'sales', 'users')", (error2, tables) => {
-          db.close();
-          if (error2 || tables.n !== 3) return reject(new Error('El archivo es una base SQLite, pero no es de esta aplicación'));
-          resolve();
-        });
-      });
-    });
-  });
-}
-
 async function main() {
   const [input, ...flags] = process.argv.slice(2);
 
@@ -59,8 +38,7 @@ async function main() {
 
   const file = resolveBackupFile(input);
   if (!file) throw new Error(`No se encontró el backup "${input}"`);
-  if (!looksLikeSqlite(file)) throw new Error('El archivo no es un backup válido (no es una base SQLite; ¿es un .dump viejo de PostgreSQL?)');
-  await checkBackup(file);
+  await checkBackupFile(file);
 
   if (!flags.includes('--yes')) {
     console.log(`Se va a REEMPLAZAR toda la base actual (${DB_FILE}) por el backup:\n  ${file}\n`);
@@ -74,11 +52,7 @@ async function main() {
   }
   await sequelize.close();
 
-  // Se copia a un archivo temporal y recién después se reemplaza: nunca queda una base a medias.
-  const temp = `${DB_FILE}.restaurando`;
-  fs.copyFileSync(file, temp);
-  for (const extra of ['-wal', '-shm']) fs.rmSync(`${DB_FILE}${extra}`, { force: true });
-  fs.renameSync(temp, DB_FILE);
+  replaceDatabaseFile(DB_FILE, file);
   console.log('Restauración completa. Al abrir la aplicación se aplican las migraciones que falten.');
 }
 

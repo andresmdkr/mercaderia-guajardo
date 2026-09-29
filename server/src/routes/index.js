@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const appHandler = require('../handlers/appHandler');
 const authRoutes = require('./authRoutes');
+const backupRoutes = require('./backupRoutes');
 const categoryRoutes = require('./categoryRoutes');
 const customerRoutes = require('./customerRoutes');
 const productRoutes = require('./productRoutes');
@@ -14,6 +15,7 @@ const router = Router();
 
 router.get('/version', appHandler.getVersion);
 router.use('/auth', authRoutes);
+router.use('/backups', requireAuth, backupRoutes);
 router.use('/categories', requireAuth, categoryRoutes);
 router.use('/customers', requireAuth, customerRoutes);
 router.use('/products', requireAuth, productRoutes);

@@ -17,15 +17,27 @@ function timestamp(date = new Date()) {
   return `${day}_${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
 }
 
+// mercaderia_2026-09-29_21-54-03[_etiqueta].sqlite  → sin etiqueta = hecho a mano
+const BACKUP_NAME = /^mercaderia_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}(?:_([a-z-]+))?\.sqlite$/;
+
+// Nombre de archivo de backup válido (evita rutas raras cuando el nombre viene de la pantalla).
+const isValidBackupName = (name) => typeof name === 'string' && BACKUP_NAME.test(name);
+
+// Tipo de backup según la etiqueta del nombre: manual, automatico, antes-de-migrar, antes-de-restaurar.
+const backupKind = (file) => BACKUP_NAME.exec(file)?.[1] ?? 'manual';
+
 // Lista los backups, del más nuevo al más viejo.
 function listBackups(dir = backupDir()) {
   if (!fs.existsSync(dir)) return [];
   return fs
     .readdirSync(dir)
-    .filter((file) => file.startsWith(`${PREFIX}_`) && file.endsWith(EXTENSION))
+    .filter((file) => isValidBackupName(file))
     .sort()
     .reverse()
-    .map((file) => ({ file, path: path.join(dir, file), size: fs.statSync(path.join(dir, file)).size }));
+    .map((file) => {
+      const stat = fs.statSync(path.join(dir, file));
+      return { file, path: path.join(dir, file), size: stat.size, createdAt: stat.mtime, kind: backupKind(file) };
+    });
 }
 
 const formatSize = (bytes) =>
@@ -47,6 +59,49 @@ function rotateBackups(keep) {
   return old.length;
 }
 
+// Backup automático: si el último backup (de cualquier tipo) tiene más de `maxAgeHours` horas, hace uno nuevo.
+// Devuelve la ruta del backup creado, o null si todavía no tocaba.
+async function backupIfDue(sequelize, { maxAgeHours = 20, keep = 30 } = {}) {
+  const newest = listBackups()[0];
+  if (newest && Date.now() - newest.createdAt.getTime() < maxAgeHours * 60 * 60 * 1000) return null;
+  const file = await createBackup(sequelize, 'automatico');
+  rotateBackups(keep);
+  return file;
+}
+
+// Abre el backup en modo solo lectura y comprueba que la base esté sana y tenga las tablas del negocio.
+function checkBackupFile(file) {
+  const sqlite3 = require('sqlite3');
+  if (!looksLikeSqlite(file)) {
+    return Promise.reject(new Error('El archivo no es un backup válido (no es una base SQLite; ¿es un .dump viejo de PostgreSQL?)'));
+  }
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(file, sqlite3.OPEN_READONLY, (openError) => {
+      if (openError) return reject(new Error(`No se pudo abrir el backup: ${openError.message}`));
+      db.get('PRAGMA integrity_check', (error, row) => {
+        if (error || row.integrity_check !== 'ok') {
+          db.close();
+          return reject(new Error('El backup está dañado (falló la verificación de integridad)'));
+        }
+        db.get("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name IN ('products', 'sales', 'users')", (error2, tables) => {
+          db.close();
+          if (error2 || tables.n !== 3) return reject(new Error('El archivo es una base SQLite, pero no es de esta aplicación'));
+          resolve();
+        });
+      });
+    });
+  });
+}
+
+// Reemplaza el archivo de la base por el backup. La base tiene que estar CERRADA (sin conexiones abiertas).
+// Se copia a un archivo temporal y recién después se reemplaza: nunca queda una base a medias.
+function replaceDatabaseFile(dbFile, backupFile) {
+  const temp = `${dbFile}.restaurando`;
+  fs.copyFileSync(backupFile, temp);
+  for (const extra of ['-wal', '-shm']) fs.rmSync(`${dbFile}${extra}`, { force: true });
+  fs.renameSync(temp, dbFile);
+}
+
 // ¿El archivo empieza con la firma de una base SQLite? (evita "restaurar" cualquier otra cosa)
 function looksLikeSqlite(file) {
   const fd = fs.openSync(file, 'r');
@@ -59,4 +114,17 @@ function looksLikeSqlite(file) {
   }
 }
 
-module.exports = { backupDir, timestamp, listBackups, formatSize, createBackup, rotateBackups, looksLikeSqlite };
+module.exports = {
+  backupDir,
+  timestamp,
+  listBackups,
+  isValidBackupName,
+  backupKind,
+  formatSize,
+  createBackup,
+  rotateBackups,
+  backupIfDue,
+  checkBackupFile,
+  replaceDatabaseFile,
+  looksLikeSqlite,
+};
