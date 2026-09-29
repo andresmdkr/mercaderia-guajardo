@@ -6,7 +6,6 @@ import {
   Avatar,
   Box,
   Button,
-  Collapse,
   Container,
   Drawer,
   IconButton,
@@ -15,6 +14,7 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
+  Tooltip,
   Typography,
   alpha,
   useTheme,
@@ -23,7 +23,8 @@ import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCartOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import { logout } from '../redux/sessionSlice';
-import { sections } from '../theme/sections';
+import { menuItems, settingsMenuItem } from '../theme/sections';
+import SectionTabs from './SectionTabs';
 import ThemeToggle from './ThemeToggle';
 
 const DRAWER_WIDTH = 252;
@@ -38,55 +39,45 @@ const initials = (name = '') =>
     .map((word) => word[0].toUpperCase())
     .join('');
 
-function NavItem({ section, onNavigate, nested = false }) {
-  const theme = useTheme();
+// Qué ítem del menú corresponde a la pantalla actual (el de Ventas también marca Nueva venta y Resúmenes, etc.).
+function useActiveKey() {
   const { pathname } = useLocation();
-  const color = theme.palette.sections[section.key];
-  const Icon = section.icon;
-  const hasChildren = Boolean(section.children?.length);
+  const all = [...menuItems, settingsMenuItem];
+  const found = all.find((item) => item.prefix && (pathname === item.prefix || pathname.startsWith(`${item.prefix}/`)));
+  if (found) return found.key;
+  return pathname === '/' ? 'home' : null;
+}
 
-  // Un grupo con submenú se marca solo cuando estás en su página principal;
-  // estando en un hijo, el grupo queda desplegado y se marca el hijo.
-  let selected = pathname.startsWith(section.path);
-  if (section.path === '/') selected = pathname === section.path;
-  // Con submenú, la sección se marca salvo que la pantalla sea una de sus subsecciones (así /sales/new sigue marcando Ventas).
-  if (hasChildren) selected = pathname.startsWith(section.path) && !section.children.some((child) => pathname.startsWith(child.path));
-  const expanded = hasChildren && pathname.startsWith(section.path);
+// Un ítem del menú: grande, con ícono y nombre. Todos iguales y neutros; el que estás usando lleva el color principal
+// y una barrita a la izquierda.
+function NavItem({ item, active, onNavigate }) {
+  const Icon = item.icon;
 
   return (
-    <>
-      <ListItemButton
-        component={NavLink}
-        to={section.path}
-        onClick={onNavigate}
-        selected={selected}
-        sx={{
-          borderRadius: 2.5,
-          mb: 0.5,
-          pl: nested ? 1.25 : 2,
-          '&.Mui-selected': { bgcolor: alpha(color, 0.14), '&:hover': { bgcolor: alpha(color, 0.2) } },
-        }}
-      >
-        <ListItemIcon sx={{ minWidth: nested ? 30 : 38, color }}>
-          <Icon fontSize="small" />
-        </ListItemIcon>
-        {/* Los subitems van un poco más chicos y en una sola línea ("Actualizar precios" se partía en dos) */}
-        <ListItemText
-          primary={section.label}
-          slotProps={{ primary: { fontSize: nested ? 14 : 14.5, fontWeight: selected ? 600 : 500, noWrap: true } }}
-        />
-      </ListItemButton>
-
-      {hasChildren && (
-        <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <List disablePadding sx={{ ml: 2.75, mb: 0.5, pl: 0.5, borderLeft: 1, borderColor: 'divider' }}>
-            {section.children.map((child) => (
-              <NavItem key={child.key} section={child} onNavigate={onNavigate} nested />
-            ))}
-          </List>
-        </Collapse>
-      )}
-    </>
+    <ListItemButton
+      component={NavLink}
+      to={item.path}
+      onClick={onNavigate}
+      selected={active}
+      sx={(theme) => ({
+        borderRadius: 2.5,
+        minHeight: 46,
+        px: 1.75,
+        mb: 0.5,
+        color: 'text.primary',
+        '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.05) },
+        '&.Mui-selected': {
+          bgcolor: alpha(theme.palette.primary.main, 0.11),
+          '&::before': { content: '""', position: 'absolute', left: 0, top: 10, bottom: 10, width: 3, borderRadius: 3, bgcolor: 'primary.main' },
+          '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
+        },
+      })}
+    >
+      <ListItemIcon sx={{ minWidth: 40, color: active ? 'primary.main' : 'text.secondary' }}>
+        <Icon />
+      </ListItemIcon>
+      <ListItemText primary={item.label} slotProps={{ primary: { fontSize: 15, fontWeight: active ? 700 : 500, noWrap: true } }} />
+    </ListItemButton>
   );
 }
 
@@ -94,24 +85,24 @@ function SidebarContent({ onNavigate }) {
   const dispatch = useDispatch();
   const theme = useTheme();
   const user = useSelector((state) => state.session.user);
+  const activeKey = useActiveKey();
   const salesColor = theme.palette.sections.sales;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2 }}>
-      <Typography variant="h6" sx={{ px: 1.5, py: 1.5, mb: 1 }}>
-        Mercadería Guajardo
-      </Typography>
-
-      {/* Ventas es lo más importante: acceso directo siempre a mano */}
+      {/* Vender es lo más importante: el botón más grande, siempre arriba y siempre a mano */}
       <Button
         component={NavLink}
         to="/sales/new"
         onClick={onNavigate}
         variant="contained"
+        size="large"
         startIcon={<AddShoppingCartIcon />}
         sx={{
-          mb: 2,
-          py: 1.1,
+          mt: 0.5,
+          mb: 3,
+          py: 1.25,
+          fontSize: 15,
           bgcolor: salesColor,
           color: theme.palette.getContrastText(salesColor),
           '&:hover': { bgcolor: salesColor, filter: 'brightness(0.92)' },
@@ -120,27 +111,34 @@ function SidebarContent({ onNavigate }) {
         Nueva venta
       </Button>
 
-      <List disablePadding sx={{ flexGrow: 1 }}>
-        {sections.map((section) => (
-          <NavItem key={section.key} section={section} onNavigate={onNavigate} />
-        ))}
-      </List>
+      <Box component="nav" aria-label="Menú principal" sx={{ flexGrow: 1 }}>
+        <List disablePadding>
+          {menuItems.map((item) => (
+            <NavItem key={item.key} item={item} active={activeKey === item.key} onNavigate={onNavigate} />
+          ))}
+        </List>
+      </Box>
 
-      {/* Pie del menú en dos filas: quién está usando la app (con el nombre completo) y, debajo, tema y salir */}
-      <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2, px: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
-          <Avatar sx={{ width: 32, height: 32, fontSize: 13, fontWeight: 700, bgcolor: alpha(theme.palette.primary.main, 0.18), color: 'primary.main' }}>
+      {/* Pie: Configuración con el tema, y quién está usando la app con el botón de salir */}
+      <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ flexGrow: 1 }}>
+            <NavItem item={settingsMenuItem} active={activeKey === 'settings'} onNavigate={onNavigate} />
+          </Box>
+          <ThemeToggle />
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, pt: 0.5, pb: 0.5 }}>
+          <Avatar sx={{ width: 28, height: 28, fontSize: 11, fontWeight: 700, bgcolor: alpha(theme.palette.primary.main, 0.18), color: 'primary.main' }}>
             {initials(user?.name)}
           </Avatar>
-          <Typography variant="body2" noWrap title={user?.name} sx={{ fontWeight: 600, minWidth: 0 }}>
+          <Typography variant="body2" noWrap title={user?.name} sx={{ fontWeight: 600, fontSize: 13, minWidth: 0, flexGrow: 1 }}>
             {user?.name}
           </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <ThemeToggle />
-          <Button size="small" color="inherit" onClick={() => dispatch(logout())} startIcon={<LogoutIcon fontSize="small" />}>
-            Salir
-          </Button>
+          <Tooltip title="Salir">
+            <IconButton size="small" aria-label="Salir" sx={{ p: 0.5 }} onClick={() => dispatch(logout())}>
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
     </Box>
@@ -197,6 +195,7 @@ export default function Layout() {
       <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 2, md: 4 } }}>
         <Toolbar sx={{ display: { md: 'none' } }} />
         <Container maxWidth="lg" disableGutters>
+          <SectionTabs />
           {/* Cada pantalla aparece con un fundido corto (solo opacidad y 4 px de movimiento: liviano para PC vieja) */}
           <Box
             key={pathname}

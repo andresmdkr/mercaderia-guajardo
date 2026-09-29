@@ -83,6 +83,41 @@ export const sections = [
   },
 ];
 
+// Menú lateral: pocos ítems, para no tener que pensar. Lo que va junto se agrupa en PESTAÑAS dentro de la pantalla
+// (Ventas: Historial | Resúmenes; Productos: Productos | Stock | Categorías | Actualizar precios).
+// `path` es la pantalla a la que lleva el ítem; `prefix` decide cuándo se lo marca como activo.
+export const menuItems = [
+  { key: 'home', label: 'Inicio', path: '/', prefix: null, icon: HomeIcon },
+  {
+    key: 'sales',
+    label: 'Ventas',
+    path: '/sales',
+    prefix: '/sales',
+    icon: ReceiptIcon,
+    tabs: [
+      { label: 'Historial', path: '/sales' },
+      { label: 'Resúmenes', path: '/sales/summaries' },
+    ],
+  },
+  {
+    key: 'products',
+    label: 'Productos',
+    path: '/products',
+    prefix: '/products',
+    icon: InventoryIcon,
+    tabs: [
+      { label: 'Productos', path: '/products' },
+      { label: 'Stock', path: '/products/stock' },
+      { label: 'Categorías', path: '/products/categories' },
+      { label: 'Actualizar precios', path: '/products/price-updates' },
+    ],
+  },
+  { key: 'customers', label: 'Clientes', path: '/customers', prefix: '/customers', icon: PeopleIcon },
+  { key: 'reports', label: 'Reportes', path: '/reports', prefix: '/reports', icon: AssessmentIcon },
+];
+
+export const settingsMenuItem = { key: 'settings', label: 'Configuración', path: '/settings', prefix: '/settings', icon: SettingsIcon };
+
 // Lista plana (secciones + subsecciones), para buscar por key o armar la portada.
 export const flatSections = sections.flatMap((section) => [section, ...(section.children ?? [])]);
 
