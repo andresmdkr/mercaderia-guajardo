@@ -195,4 +195,4 @@ async function close() {
 
 const getState = () => ({ ...state });
 
-module.exports = { start, restoreBackup, enterDemo, exitDemo, close, getState };
+module.exports = { start, restoreBackup, enterDemo, exitDemo, close, getState, readConfig, writeConfig };

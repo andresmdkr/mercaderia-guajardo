@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node scripts/prepare-app.js && electron .",
     "pack": "node scripts/prepare-app.js && electron-builder --win --ia32 --dir --publish never",
-    "dist": "node scripts/prepare-app.js && electron-builder --win --ia32 --publish never"
+    "dist": "node scripts/prepare-app.js && electron-builder --win --ia32 --publish never",
+    "wsp-test": "electron-builder --projectDir ../tools/wsp-test --win portable --ia32 --publish never"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",

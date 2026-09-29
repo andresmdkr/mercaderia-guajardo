@@ -1,0 +1,25 @@
+# Prueba aparte de la aplicación principal: un .exe portátil (no se instala) de 32 bits con WhatsApp Web.
+# Se arma desde la carpeta desktop (ya tiene electron-builder):  npm run wsp-test
+appId: com.mercaderiaguajardo.wsptest
+productName: WhatsApp Prueba
+electronVersion: 22.3.27
+
+directories:
+  output: dist
+
+files:
+  - package.json
+  - main.js
+
+asar: true
+npmRebuild: false
+
+win:
+  executableName: WhatsAppPrueba
+  target:
+    - target: portable
+      arch:
+        - ia32
+  artifactName: WhatsAppPrueba-${version}.exe
+
+publish: null

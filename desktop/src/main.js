@@ -11,6 +11,7 @@ const appServer = require('./appServer');
 const diagnostics = require('./diagnostics');
 const { printInChildProcess, runPrintJob } = require('./print');
 const updates = require('./updates');
+const whatsapp = require('./whatsapp');
 
 const SMOKE_TEST = process.argv.includes('--smoke-test'); // modo automático sin ventana (lo usa GitHub Actions)
 
@@ -44,6 +45,7 @@ process.on('unhandledRejection', (error) => log(`ERROR promesa: ${error && error
 // contenido propio: no navegan a otras páginas y solo abren ventanas para el PDF del comprobante (blob:).
 app.on('web-contents-created', (_event, contents) => {
   contents.on('will-navigate', (event, url) => {
+    if (whatsapp.owns(contents)) return; // navega solo dentro de web.whatsapp.com (lo controla whatsapp.js)
     const origin = appServer.getState().origin ?? 'about:blank';
     if (!url.startsWith(origin) && !url.startsWith(`blob:${origin}/`)) event.preventDefault(); // blob: = el PDF del comprobante
   });
@@ -106,6 +108,7 @@ function createMainWindow(origin) {
   });
   mainWindow.on('closed', () => {
     mainWindow = null;
+    whatsapp.close(); // si se cierra la aplicación, la ventana de WhatsApp no queda huérfana
   });
   mainWindow.loadURL(origin);
 }
@@ -118,6 +121,9 @@ function handle(channel, action) {
     return action(...args);
   });
 }
+
+// WhatsApp: 'integrated' = ventana propia dentro de la aplicación (por defecto); 'browser' = navegador del sistema.
+const whatsappMode = () => (appServer.readConfig(appServer.getState().dataDir).whatsapp === 'browser' ? 'browser' : 'integrated');
 
 function relaunch() {
   app.relaunch();
@@ -148,6 +154,22 @@ function registerIpc() {
     const result = await appServer.exitDemo({ fresh: fresh === true }, log);
     if (result.ok) setTimeout(relaunch, 300);
     return result;
+  });
+
+  handle('desktop:open-whatsapp', (url) => {
+    if (!whatsapp.parsePhone(url)) return { ok: false, message: 'Enlace de WhatsApp no válido' };
+    if (whatsappMode() === 'browser') {
+      shell.openExternal(url);
+      return { ok: true };
+    }
+    return whatsapp.open(url, { icon: ICON, log });
+  });
+  handle('desktop:get-whatsapp-mode', () => whatsappMode());
+  handle('desktop:set-whatsapp-mode', (mode) => {
+    if (mode !== 'integrated' && mode !== 'browser') return { ok: false };
+    appServer.writeConfig(appServer.getState().dataDir, { whatsapp: mode });
+    log(`WhatsApp: modo ${mode}`);
+    return { ok: true };
   });
 
   handle('desktop:get-update-status', () => updates.getStatus());
