@@ -137,7 +137,7 @@ export default function SaleSummary({
           '&:hover': { bgcolor: (theme) => theme.palette.sections.sales, filter: 'brightness(0.92)' },
         }}
       >
-        Confirmar venta
+        Confirmar venta (F9)
       </Button>
     </Paper>
   );

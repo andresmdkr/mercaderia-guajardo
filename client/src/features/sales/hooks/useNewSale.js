@@ -39,6 +39,16 @@ export default function useNewSale() {
     }
   };
 
+  // Deja todo como al empezar una venta nueva (el medio de pago se conserva).
+  const reset = () => {
+    cart.clear();
+    setDiscount(emptyDiscount);
+    setCustomer(null);
+    setNotes('');
+    setEntryError(null);
+    setSubmitError(null);
+  };
+
   const confirm = async () => {
     if (!canConfirm) return;
     setSubmitting(true);
@@ -53,11 +63,7 @@ export default function useNewSale() {
       });
       setLastSale(sale);
       // Listo para la próxima venta (el medio de pago se conserva).
-      cart.clear();
-      setDiscount(emptyDiscount);
-      setCustomer(null);
-      setNotes('');
-      setEntryError(null);
+      reset();
     } catch (error) {
       setSubmitError(getErrorMessage(error));
     } finally {
@@ -85,5 +91,6 @@ export default function useNewSale() {
     addProduct,
     addByCode,
     confirm,
+    reset,
   };
 }

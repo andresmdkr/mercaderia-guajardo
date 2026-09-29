@@ -1,8 +1,10 @@
-import { useRef } from 'react';
-import { Alert, Box, Button, Grid, IconButton, Paper } from '@mui/material';
+import { useRef, useState } from 'react';
+import { Alert, Box, Button, Grid, IconButton, Paper, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PdfIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import ConfirmDialog from '../../../components/ConfirmDialog';
 import PageHeader from '../../../components/PageHeader';
+import useHotkeys from '../../../hooks/useHotkeys';
 import { formatMoney, formatSaleNumber } from '../../../utils/format';
 import ProductPicker from '../../products/components/ProductPicker';
 import useBusinessSettings from '../../settings/hooks/useBusinessSettings';
@@ -17,6 +19,8 @@ export default function NewSalePage() {
   const sale = useNewSale();
   const business = useBusinessSettings(); // datos del encabezado del comprobante
   const searchInputRef = useRef(null);
+  const codeInputRef = useRef(null);
+  const [confirmingClear, setConfirmingClear] = useState(false);
 
   // Al terminar una venta, el cursor vuelve al buscador para arrancar la siguiente.
   const handleConfirm = async () => {
@@ -24,9 +28,27 @@ export default function NewSalePage() {
     searchInputRef.current?.focus();
   };
 
+  // Atajos de teclado para vender sin soltar el teclado o el lector.
+  useHotkeys({
+    F2: () => searchInputRef.current?.focus(),
+    F4: () => codeInputRef.current?.focus(),
+    F9: handleConfirm,
+    Escape: () => sale.cart.lines.length > 0 && setConfirmingClear(true), // con la venta vacía no hace nada
+  });
+
+  const handleClear = () => {
+    sale.reset();
+    setConfirmingClear(false);
+    searchInputRef.current?.focus();
+  };
+
   return (
     <>
       <PageHeader sectionKey="sales" title="Nueva venta" />
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -1, mb: 2 }}>
+        Atajos: <strong>F2</strong> buscar producto · <strong>F4</strong> lector de código · <strong>F9</strong> confirmar venta ·{' '}
+        <strong>Esc</strong> vaciar la venta
+      </Typography>
 
       {sale.lastSale && (
         <Alert
@@ -70,7 +92,7 @@ export default function NewSalePage() {
                 />
               </Box>
               <Box sx={{ flex: '1 1 220px' }}>
-                <CodeEntry onSubmit={sale.addByCode} />
+                <CodeEntry onSubmit={sale.addByCode} inputRef={codeInputRef} />
               </Box>
             </Box>
             {sale.entryError && (
@@ -101,6 +123,15 @@ export default function NewSalePage() {
           />
         </Grid>
       </Grid>
+      {confirmingClear && (
+        <ConfirmDialog
+          title="Vaciar la venta"
+          message="Se quitan todos los productos cargados y los datos de esta venta. No se registra nada."
+          confirmLabel="Vaciar"
+          onConfirm={handleClear}
+          onCancel={() => setConfirmingClear(false)}
+        />
+      )}
     </>
   );
 }
