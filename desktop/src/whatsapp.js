@@ -180,7 +180,7 @@ async function open(url, { icon, log }, { paste = false } = {}) {
 // Lanza otro programa de WhatsApp (por ejemplo la prueba aparte) pasándole solo el número. El programa lo elige el
 // usuario en Configuración; acá se comprueba que exista, que sea un .exe y se lo abre sin consola ni intérprete de comandos.
 // Si no se puede abrir, se avisa y se ofrece el navegador. Devuelve { ok, message }.
-function openWithProgram(program, url, { log }) {
+function openWithProgram(program, url, { log }, { paste = false } = {}) {
   const phone = parsePhone(url);
   if (!phone) return { ok: false, message: 'Enlace de WhatsApp no válido' };
   const fallback = (message) => {
@@ -203,7 +203,9 @@ function openWithProgram(program, url, { log }) {
     return fallback(`No se encuentra el programa: ${program || '(ninguno elegido)'}`);
   }
   try {
-    const child = spawn(program, [`--telefono=${phone}`], { detached: true, stdio: 'ignore', shell: false });
+    // --pegar: WhatsApp Guajardo pega solo el comprobante que quedó en el portapapeles (otros programas lo ignoran)
+    const args = [`--telefono=${phone}`, ...(paste ? ['--pegar'] : [])];
+    const child = spawn(program, args, { detached: true, stdio: 'ignore', shell: false });
     child.once('error', (error) => fallback(error.message));
     child.unref();
     log(`WhatsApp: abre el chat con ${path.basename(program)}`);

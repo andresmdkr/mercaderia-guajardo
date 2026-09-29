@@ -10,6 +10,8 @@ const path = require('node:path');
 
 const WHATSAPP_URL = 'https://web.whatsapp.com/';
 // La aplicación del negocio la puede abrir con un número: WhatsAppGuajardo.exe --telefono=5491155551234
+// Con --pegar, cuando el chat está listo se pega lo que haya en el portapapeles (el comprobante, copiado como archivo)
+const wantsPaste = (argv) => argv.includes('--pegar');
 const phoneFromArgs = (argv) => argv.map((arg) => /^--telefono=(\d{8,15})$/.exec(arg)).find(Boolean)?.[1] ?? null;
 // WhatsApp Web rechaza navegadores que considera viejos; Electron 22 trae Chromium 108. Se presenta como uno más nuevo.
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -110,25 +112,48 @@ async function openInPage(phone) {
   return false;
 }
 
-// Abre el chat de ese número: sin recargar si se puede, recargando si no.
+// Pega el portapapeles en el chat abierto. Espera a que el chat esté listo (aparece el campo para escribir).
+// Si no llega a abrirse, queda copiado y se pega a mano con Ctrl+V.
+async function pasteWhenReady() {
+  const deadline = Date.now() + 45000;
+  while (Date.now() < deadline && win && !win.isDestroyed()) {
+    const ready = await win.webContents.executeJavaScript("Boolean(document.querySelector('#main footer'))").catch(() => false);
+    if (ready) {
+      await sleep(700); // deja que WhatsApp termine de acomodar el chat y le dé el foco al campo
+      if (!win || win.isDestroyed()) return;
+      win.webContents.focus();
+      win.webContents.paste();
+      log('comprobante pegado en el chat');
+      return;
+    }
+    await sleep(500);
+  }
+  log('no se pegó solo el comprobante (el chat no llegó a abrirse)');
+}
+
+// Abre el chat de ese número: sin recargar si se puede, recargando si no. Con paste, pega el comprobante al final.
 let opening = false;
-async function openChat(phone) {
+async function openChat(phone, paste = false) {
   if (!win || opening) return;
-  log(`pedido desde la aplicación del negocio: chat de ${phone}`);
+  log(`pedido desde la aplicación del negocio: chat de ${phone}${paste ? ' (con comprobante)' : ''}`);
   if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
   if (!win.webContents.isLoading() && win.webContents.getURL().startsWith(WHATSAPP_URL)) {
     opening = true;
     try {
-      if (await openInPage(phone)) return;
+      if (await openInPage(phone)) {
+        if (paste) pasteWhenReady();
+        return;
+      }
     } finally {
       opening = false;
     }
   }
   log('carga el chat (recarga la página)');
   openedChat = null;
-  win.webContents.loadURL(`${WHATSAPP_URL}send?phone=${phone}`);
+  const loading = win.webContents.loadURL(`${WHATSAPP_URL}send?phone=${phone}`).catch(() => {});
+  if (paste) loading.then(() => pasteWhenReady());
 }
 
 function askReload(text) {
@@ -209,7 +234,8 @@ function createWindow() {
   });
 
   const startPhone = phoneFromArgs(process.argv);
-  wc.loadURL(startPhone ? `${WHATSAPP_URL}send?phone=${startPhone}` : WHATSAPP_URL);
+  const loadingStart = wc.loadURL(startPhone ? `${WHATSAPP_URL}send?phone=${startPhone}` : WHATSAPP_URL).catch(() => {});
+  if (startPhone && wantsPaste(process.argv)) loadingStart.then(() => pasteWhenReady());
 }
 
 function buildMenu() {
@@ -253,7 +279,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', (event, argv) => {
     win?.focus();
     const phone = phoneFromArgs(argv);
-    if (phone) openChat(phone);
+    if (phone) openChat(phone, wantsPaste(argv));
   });
   app.on('child-process-gone', (event, details) => log(`AVISO proceso interno caído: tipo=${details.type} motivo=${details.reason} código=${details.exitCode}`));
   app.whenReady().then(() => {

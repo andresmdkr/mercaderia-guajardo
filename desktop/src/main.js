@@ -187,11 +187,13 @@ function registerIpc() {
     const { mode, program } = whatsappSettings();
     let opened = { ok: true };
     if (mode === 'browser') shell.openExternal(url);
-    else if (mode === 'program') opened = whatsapp.openWithProgram(program, url, { log });
+    else if (mode === 'program') opened = whatsapp.openWithProgram(program, url, { log }, { paste: copy.ok });
     else opened = await whatsapp.open(url, { icon: ICON, log }, { paste: copy.ok });
     // Si no se pudo dejar copiado, se muestra el archivo en su carpeta para arrastrarlo al chat.
     if (!copy.ok) shell.showItemInFolder(file);
-    return { ok: opened.ok, message: opened.message, mode, copied: copy.ok, autoPaste: mode === 'integrated' && copy.ok };
+    // El pegado automático lo hacen la ventana propia y WhatsApp Guajardo (que entiende --pegar); los demás programas, no.
+    const ownProgram = mode === 'program' && /whatsappguajardo/i.test(path.basename(program ?? ''));
+    return { ok: opened.ok, message: opened.message, mode, copied: copy.ok, autoPaste: (mode === 'integrated' || ownProgram) && copy.ok };
   });
 
   handle('desktop:get-whatsapp-settings', () => whatsappSettings());
