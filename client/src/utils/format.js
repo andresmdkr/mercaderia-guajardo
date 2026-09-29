@@ -17,6 +17,12 @@ export const formatCompactMoney = (value) => compactCurrency.format(value);
 
 export const formatInteger = (value) => integer.format(value);
 
+// Tamaño de un archivo: 340 KB, 1,2 MB
+export const formatBytes = (bytes) =>
+  bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toLocaleString('es-AR', { maximumFractionDigits: 1 })} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
 // Número de venta con ceros a la izquierda: 12 → "#0012"
 export const formatSaleNumber = (id) => `#${String(id).padStart(4, '0')}`;
 
