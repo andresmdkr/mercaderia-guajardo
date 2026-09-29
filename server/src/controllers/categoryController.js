@@ -1,6 +1,7 @@
-const { col, fn, literal, where } = require('sequelize');
+const { col, fn, literal } = require('sequelize');
 const { Category, Product } = require('../db');
 const AppError = require('../utils/AppError');
+const { normalizeText } = require('../utils/searchText');
 
 // Las categorías son pocas, así que se devuelven todas juntas (sin paginar).
 function list() {
@@ -18,10 +19,14 @@ async function getById(id) {
   return category;
 }
 
-// El nombre es único sin importar mayúsculas (también hay un índice en la base que lo garantiza).
+// El nombre es único sin importar mayúsculas ni tildes ("Lácteos" = "lacteos"). La base tiene un índice que garantiza lo de
+// las mayúsculas; las tildes se comparan acá (las categorías son pocas).
 async function assertNameFree(name, exceptId) {
-  const existing = await Category.findOne({ where: where(fn('LOWER', col('name')), name.toLowerCase()) });
-  if (existing && existing.id !== exceptId) throw new AppError('Ya existe una categoría con ese nombre', 409);
+  const wanted = normalizeText(name);
+  const all = await Category.findAll({ attributes: ['id', 'name'] });
+  if (all.some((category) => category.id !== exceptId && normalizeText(category.name) === wanted)) {
+    throw new AppError('Ya existe una categoría con ese nombre', 409);
+  }
 }
 
 async function create({ name }) {

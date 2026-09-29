@@ -2,9 +2,12 @@ const AppError = require('./AppError');
 
 // Helpers para leer y validar parámetros de la URL / query string.
 
+// Un número absurdamente grande (page=99999999999999999999) haría fallar la consulta: se toma como no válido.
+const MAX_INT = 2_000_000_000;
+
 function toPositiveInt(value, fallback) {
   const n = Number.parseInt(value, 10);
-  return Number.isInteger(n) && n > 0 ? n : fallback;
+  return Number.isInteger(n) && n > 0 && n <= MAX_INT ? n : fallback;
 }
 
 function parseBool(value) {

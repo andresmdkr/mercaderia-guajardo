@@ -15,7 +15,7 @@ async function list({ page, limit, search, active, sorting }) {
   const conditions = [];
 
   // Ignora mayúsculas y tildes (nombre, teléfono y email).
-  if (search) conditions.push(searchCondition(['"Customer"."name"', '"Customer"."phone"', '"Customer"."email"'], search));
+  if (search) conditions.push(searchCondition(['"Customer"."name"', '"Customer"."phone"', '"Customer"."email"'], search, { phoneColumns: ['"Customer"."phone"'] }));
   if (active !== undefined) conditions.push({ active });
 
   const { rows, count } = await Customer.findAndCountAll({

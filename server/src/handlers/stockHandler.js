@@ -4,6 +4,7 @@ const { parseDate, toPositiveInt } = require('../utils/parse');
 
 const MAX_LIMIT = 100;
 const MAX_BULK_ITEMS = 200;
+const MAX_STOCK = 9_999_999; // unidades por producto: más allá, los números pierden precisión
 const MANUAL_TYPES = ['in', 'out', 'adjustment'];
 const FILTER_TYPES = [...MANUAL_TYPES, 'sale', 'sale_void'];
 
@@ -31,10 +32,12 @@ function validateAmount(type, source) {
   if (type === 'adjustment') {
     const newStock = parseInteger(source.newStock, 'El stock real');
     if (newStock < 0) throw new AppError('El stock real no puede ser negativo');
+    if (newStock > MAX_STOCK) throw new AppError(`El stock real no puede superar ${MAX_STOCK}`);
     return { newStock };
   }
   const quantity = parseInteger(source.quantity, 'La cantidad');
   if (quantity <= 0) throw new AppError('La cantidad debe ser mayor a 0');
+  if (quantity > MAX_STOCK) throw new AppError(`La cantidad no puede superar ${MAX_STOCK}`);
   return { quantity };
 }
 

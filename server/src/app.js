@@ -12,6 +12,12 @@ const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
+// Si el pedido no trae un cuerpo JSON (otro tipo de contenido, o ninguno) Express deja req.body sin definir: se toma como vacío
+// y las validaciones contestan 400 en vez de fallar con un error interno.
+app.use((req, res, next) => {
+  if (req.body === undefined) req.body = {};
+  next();
+});
 app.use(cookieParser());
 
 app.get('/api/health', async (req, res) => {
