@@ -10,10 +10,11 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import TableEmptyRow from '../../../components/TableEmptyRow';
 import { formatDateTime } from '../../../utils/format';
 import { MOVEMENT_TYPES } from '../movementTypes';
 
-export default function MovementsTable({ items, total, page, pageSize, onPageChange }) {
+export default function MovementsTable({ items, total, page, pageSize, onPageChange, loading, emptyState }) {
   return (
     <Paper>
       <TableContainer>
@@ -31,13 +32,9 @@ export default function MovementsTable({ items, total, page, pageSize, onPageCha
           </TableHead>
           <TableBody>
             {items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  <Typography color="text.secondary" sx={{ py: 3 }}>
-                    No hay movimientos para mostrar
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <TableEmptyRow colSpan={7} loading={loading}>
+                {emptyState}
+              </TableEmptyRow>
             )}
             {items.map((movement) => {
               const type = MOVEMENT_TYPES[movement.type] ?? { label: movement.type, color: 'default' };

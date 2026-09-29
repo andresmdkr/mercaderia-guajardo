@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Alert, Box, Button, CircularProgress, InputAdornment, Snackbar, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import PeopleIcon from '@mui/icons-material/PeopleOutlined';
 import SearchIcon from '@mui/icons-material/Search';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
 import ClearFiltersButton from '../../../components/ClearFiltersButton';
+import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import StatusFilter from '../../../components/StatusFilter';
 import { getErrorMessage } from '../../../services/api';
@@ -41,6 +44,26 @@ export default function CustomersPage() {
       setMessage({ severity: 'error', text: getErrorMessage(error) });
     }
   };
+
+  const emptyState = customers.hasActiveFilters ? (
+    <EmptyState
+      icon={SearchOffIcon}
+      title="Ningún cliente coincide"
+      description="Probá con otra búsqueda o sacá algún filtro."
+      action={<Button onClick={customers.clearFilters}>Limpiar filtros</Button>}
+    />
+  ) : (
+    <EmptyState
+      icon={PeopleIcon}
+      title="Todavía no cargaste clientes"
+      description="Guardá a tus clientes con su teléfono para venderles y escribirles por WhatsApp."
+      action={
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>
+          Nuevo cliente
+        </Button>
+      }
+    />
+  );
 
   return (
     <>
@@ -90,6 +113,8 @@ export default function CustomersPage() {
         page={customers.page}
         pageSize={customers.pageSize}
         onPageChange={customers.setPage}
+        loading={customers.loading}
+        emptyState={emptyState}
         sort={customers.sort}
         onSort={customers.toggleSort}
         onEdit={setEditing}

@@ -8,13 +8,14 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  Typography,
 } from '@mui/material';
+import TableEmptyRow from '../../../components/TableEmptyRow';
 import SortableHeaderCell from '../../../components/SortableHeaderCell';
 import { formatMoney } from '../../../utils/format';
+import { onEnter } from '../../../utils/keyboard';
 
 // Hacer clic en una fila abre el producto para editarlo (o darlo de baja).
-export default function ProductsTable({ items, total, page, pageSize, onPageChange, onEdit, sort, onSort }) {
+export default function ProductsTable({ items, total, page, pageSize, onPageChange, onEdit, sort, onSort, loading, emptyState }) {
   return (
     <Paper>
       <TableContainer>
@@ -46,16 +47,19 @@ export default function ProductsTable({ items, total, page, pageSize, onPageChan
           </TableHead>
           <TableBody>
             {items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  <Typography color="text.secondary" sx={{ py: 3 }}>
-                    No hay productos para mostrar
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <TableEmptyRow colSpan={7} loading={loading}>
+                {emptyState}
+              </TableEmptyRow>
             )}
             {items.map((product) => (
-              <TableRow key={product.id} hover onClick={() => onEdit(product)} sx={{ cursor: 'pointer' }}>
+              <TableRow
+                key={product.id}
+                hover
+                tabIndex={0}
+                onClick={() => onEdit(product)}
+                onKeyDown={onEnter(() => onEdit(product))}
+                sx={{ cursor: 'pointer' }}
+              >
                 <TableCell>{product.code}</TableCell>
                 <TableCell>
                   {product.name}

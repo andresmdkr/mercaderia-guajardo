@@ -66,7 +66,28 @@ export function buildTheme(mode) {
       button: { textTransform: 'none', fontWeight: 600 },
     },
     components: {
-      MuiCssBaseline: { defaultProps: { enableColorScheme: true } },
+      MuiCssBaseline: {
+        defaultProps: { enableColorScheme: true },
+        styleOverrides: (theme) => ({
+          // Foco visible al navegar con el teclado (Tab): un contorno claro. Con el mouse no aparece (:focus-visible).
+          'a:focus-visible, [tabindex]:focus-visible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 },
+          // Las filas de las tablas se recorren con Tab y se abren con Enter: el contorno va por dentro de la fila.
+          'tr[tabindex]:focus-visible': { outlineOffset: -2 },
+          '.MuiTableRow-hover': { transition: 'background-color 120ms ease' },
+          // Quien tiene activado "reducir movimiento" en Windows no ve animaciones.
+          '@media (prefers-reduced-motion: reduce)': {
+            '*, *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important' },
+          },
+        }),
+      },
+      // Botones, íconos, chips, ítems del menú y encabezados ordenables: mismo contorno de foco por teclado.
+      MuiButtonBase: {
+        styleOverrides: {
+          root: ({ theme }) => ({
+            '&.Mui-focusVisible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 },
+          }),
+        },
+      },
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: { root: { borderRadius: 10 } },

@@ -11,16 +11,17 @@ import {
   TablePagination,
   TableRow,
   Tooltip,
-  Typography,
 } from '@mui/material';
 import NotesIcon from '@mui/icons-material/StickyNote2Outlined';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import TableEmptyRow from '../../../components/TableEmptyRow';
 import SortableHeaderCell from '../../../components/SortableHeaderCell';
+import { onEnter } from '../../../utils/keyboard';
 import { whatsappUrl } from '../../../utils/whatsapp';
 import WhatsAppDialog from './WhatsAppDialog';
 
 // Hacer clic en una fila abre el cliente para editarlo (o darlo de baja).
-export default function CustomersTable({ items, total, page, pageSize, onPageChange, onEdit, sort, onSort }) {
+export default function CustomersTable({ items, total, page, pageSize, onPageChange, onEdit, sort, onSort, loading, emptyState }) {
   const [whatsappCustomer, setWhatsappCustomer] = useState(null);
 
   return (
@@ -43,16 +44,19 @@ export default function CustomersTable({ items, total, page, pageSize, onPageCha
           </TableHead>
           <TableBody>
             {items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <Typography color="text.secondary" sx={{ py: 3 }}>
-                    No hay clientes para mostrar
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <TableEmptyRow colSpan={4} loading={loading}>
+                {emptyState}
+              </TableEmptyRow>
             )}
             {items.map((customer) => (
-              <TableRow key={customer.id} hover onClick={() => onEdit(customer)} sx={{ cursor: 'pointer' }}>
+              <TableRow
+                key={customer.id}
+                hover
+                tabIndex={0}
+                onClick={() => onEdit(customer)}
+                onKeyDown={onEnter(() => onEdit(customer))}
+                sx={{ cursor: 'pointer' }}
+              >
                 <TableCell>
                   {customer.name}
                   {!customer.active && <Chip size="small" label="De baja" sx={{ ml: 1 }} />}

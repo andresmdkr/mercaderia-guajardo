@@ -8,14 +8,15 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  Typography,
 } from '@mui/material';
+import TableEmptyRow from '../../../components/TableEmptyRow';
 import SortableHeaderCell from '../../../components/SortableHeaderCell';
 import { formatDateTime, formatMoney, formatSaleNumber } from '../../../utils/format';
+import { onEnter } from '../../../utils/keyboard';
 import { PAYMENT_METHODS, SALE_STATUSES } from '../salesConstants';
 
 // Hacer clic en una fila abre el detalle de la venta.
-export default function SalesTable({ items, total, page, pageSize, onPageChange, onOpen, sort, onSort }) {
+export default function SalesTable({ items, total, page, pageSize, onPageChange, onOpen, sort, onSort, loading, emptyState }) {
   return (
     <Paper>
       <TableContainer>
@@ -38,19 +39,22 @@ export default function SalesTable({ items, total, page, pageSize, onPageChange,
           </TableHead>
           <TableBody>
             {items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  <Typography color="text.secondary" sx={{ py: 3 }}>
-                    No hay ventas para mostrar
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <TableEmptyRow colSpan={6} loading={loading}>
+                {emptyState}
+              </TableEmptyRow>
             )}
             {items.map((sale) => {
               const status = SALE_STATUSES[sale.status];
               const voided = sale.status === 'voided';
               return (
-                <TableRow key={sale.id} hover onClick={() => onOpen(sale)} sx={{ cursor: 'pointer' }}>
+                <TableRow
+                  key={sale.id}
+                  hover
+                  tabIndex={0}
+                  onClick={() => onOpen(sale)}
+                  onKeyDown={onEnter(() => onOpen(sale))}
+                  sx={{ cursor: 'pointer' }}
+                >
                   <TableCell sx={{ fontWeight: 600 }}>{formatSaleNumber(sale.id)}</TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(sale.createdAt)}</TableCell>
                   <TableCell>{sale.customer?.name ?? 'Consumidor final'}</TableCell>

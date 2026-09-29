@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Alert, Box, Button, CircularProgress, MenuItem, Snackbar, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import ReceiptIcon from '@mui/icons-material/ReceiptLongOutlined';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
 import ClearFiltersButton from '../../../components/ClearFiltersButton';
+import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import PeriodFilter from '../../../components/PeriodFilter';
 import CustomerPicker from '../../customers/components/CustomerPicker';
@@ -20,6 +23,26 @@ export default function SalesPage() {
     setMessage({ severity: 'success', text });
     sales.reload();
   };
+
+  const emptyState = sales.hasActiveFilters ? (
+    <EmptyState
+      icon={SearchOffIcon}
+      title="Ninguna venta coincide"
+      description="No hay ventas con esos filtros. Probá con otro período o sacá algún filtro."
+      action={<Button onClick={sales.clearFilters}>Limpiar filtros</Button>}
+    />
+  ) : (
+    <EmptyState
+      icon={ReceiptIcon}
+      title="Todavía no hay ventas hoy"
+      description="Cuando vendas algo, aparece acá. Para ver otros días, cambiá el período."
+      action={
+        <Button variant="contained" component={RouterLink} to="/sales/new" startIcon={<AddIcon />} sx={{ bgcolor: (theme) => theme.palette.sections.sales, '&:hover': { bgcolor: (theme) => theme.palette.sections.sales, filter: 'brightness(0.92)' } }}>
+          Nueva venta
+        </Button>
+      }
+    />
+  );
 
   return (
     <>
@@ -101,6 +124,8 @@ export default function SalesPage() {
         page={sales.page}
         pageSize={sales.pageSize}
         onPageChange={sales.setPage}
+        loading={sales.loading}
+        emptyState={emptyState}
         sort={sales.sort}
         onSort={sales.toggleSort}
         onOpen={(sale) => setOpenSaleId(sale.id)}

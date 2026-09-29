@@ -12,8 +12,11 @@ import {
   TextField,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearFiltersButton from '../../../components/ClearFiltersButton';
+import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import StatusFilter from '../../../components/StatusFilter';
 import { getErrorMessage } from '../../../services/api';
@@ -62,6 +65,26 @@ export default function ProductsPage() {
       setMessage({ severity: 'error', text: getErrorMessage(error) });
     }
   };
+
+  const emptyState = products.hasActiveFilters ? (
+    <EmptyState
+      icon={SearchOffIcon}
+      title="Ningún producto coincide"
+      description="Probá con otra búsqueda o sacá algún filtro."
+      action={<Button onClick={products.clearFilters}>Limpiar filtros</Button>}
+    />
+  ) : (
+    <EmptyState
+      icon={InventoryIcon}
+      title="Todavía no cargaste productos"
+      description="Cargá el primero para empezar a vender y a controlar el stock."
+      action={
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>
+          Nuevo producto
+        </Button>
+      }
+    />
+  );
 
   return (
     <>
@@ -130,6 +153,8 @@ export default function ProductsPage() {
         page={products.page}
         pageSize={products.pageSize}
         onPageChange={products.setPage}
+        loading={products.loading}
+        emptyState={emptyState}
         sort={products.sort}
         onSort={products.toggleSort}
         onEdit={setEditing}

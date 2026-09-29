@@ -150,6 +150,7 @@ function SidebarContent({ onNavigate }) {
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const closeMobile = () => setMobileOpen(false);
+  const { pathname } = useLocation();
 
   const drawerPaperSx = (theme) => ({
     width: DRAWER_WIDTH,
@@ -196,7 +197,16 @@ export default function Layout() {
       <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 2, md: 4 } }}>
         <Toolbar sx={{ display: { md: 'none' } }} />
         <Container maxWidth="lg" disableGutters>
-          <Outlet />
+          {/* Cada pantalla aparece con un fundido corto (solo opacidad y 4 px de movimiento: liviano para PC vieja) */}
+          <Box
+            key={pathname}
+            sx={{
+              animation: 'pageIn 180ms ease-out',
+              '@keyframes pageIn': { from: { opacity: 0, transform: 'translateY(4px)' }, to: { opacity: 1, transform: 'none' } },
+            }}
+          >
+            <Outlet />
+          </Box>
         </Container>
       </Box>
     </Box>

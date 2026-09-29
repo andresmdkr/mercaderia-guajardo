@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Alert, Box, Button, CircularProgress, MenuItem, Snackbar, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
+import SwapVertIcon from '@mui/icons-material/SwapVertOutlined';
 import ClearFiltersButton from '../../../components/ClearFiltersButton';
+import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import ProductPicker from '../../products/components/ProductPicker';
 import { createMovement } from '../api/stockApi';
@@ -23,6 +26,26 @@ export default function StockPage() {
     setFormOpen(false);
     movements.reload();
   };
+
+  const emptyState = movements.hasActiveFilters ? (
+    <EmptyState
+      icon={SearchOffIcon}
+      title="Ningún movimiento coincide"
+      description="Probá con otro producto, tipo o rango de fechas."
+      action={<Button onClick={movements.clearFilters}>Limpiar filtros</Button>}
+    />
+  ) : (
+    <EmptyState
+      icon={SwapVertIcon}
+      title="Todavía no hay movimientos de stock"
+      description="Cada venta, entrada, salida o ajuste de mercadería queda registrado acá."
+      action={
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setFormOpen(true)}>
+          Nuevo movimiento
+        </Button>
+      }
+    />
+  );
 
   return (
     <>
@@ -84,6 +107,8 @@ export default function StockPage() {
       )}
 
       <MovementsTable
+        loading={movements.loading}
+        emptyState={emptyState}
         items={movements.items}
         total={movements.total}
         page={movements.page}
