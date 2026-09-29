@@ -23,6 +23,7 @@ import { voidSale } from '../api/salesApi';
 import useSaleDetail from '../hooks/useSaleDetail';
 import { openReceiptPdf } from '../pdf/receiptPdf';
 import { PAYMENT_METHODS, SALE_STATUSES } from '../salesConstants';
+import PrintReceiptButton from './PrintReceiptButton';
 import VoidSaleDialog from './VoidSaleDialog';
 
 function Field({ label, children }) {
@@ -153,6 +154,7 @@ export default function SaleDetailDialog({ saleId, onClose, onChanged }) {
           >
             Comprobante PDF
           </Button>
+          <PrintReceiptButton sale={sale} business={business.settings} />
           <Button onClick={onClose}>Cerrar</Button>
         </DialogActions>
       </Dialog>

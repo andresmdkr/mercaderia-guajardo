@@ -9,6 +9,7 @@ const path = require('node:path');
 const { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, shell } = require('electron');
 const appServer = require('./appServer');
 const diagnostics = require('./diagnostics');
+const { printHtml } = require('./print');
 const updates = require('./updates');
 
 const SMOKE_TEST = process.argv.includes('--smoke-test'); // modo automático sin ventana (lo usa GitHub Actions)
@@ -54,6 +55,8 @@ app.on('web-contents-created', (_event, contents) => {
         },
       };
     }
+    // WhatsApp se abre en el navegador del sistema. Solo enlaces wa.me (nunca una dirección cualquiera).
+    if (/^https:\/\/wa\.me\/\d+$/.test(url)) shell.openExternal(url);
     return { action: 'deny' }; // la pantalla usa la descarga como plan B
   });
 });
@@ -133,6 +136,8 @@ function registerIpc() {
   handle('desktop:get-update-status', () => updates.getStatus());
   handle('desktop:check-for-updates', () => updates.check());
   handle('desktop:install-update', () => updates.install());
+
+  handle('desktop:print-html', (html) => printHtml(html, { parent: mainWindow }));
 
   handle('desktop:copy-diagnostics', () => {
     const report = diagnostics.buildReport({ app, server: appServer.getState(), update: updates.getStatus(), logFile });

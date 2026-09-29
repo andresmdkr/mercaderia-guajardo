@@ -8,5 +8,6 @@
 //   checkForUpdates()            busca actualizaciones (el avance llega por onUpdateStatus)
 //   installUpdate()              instala la actualización descargada y reinicia
 //   onUpdateStatus(callback)     avisa cada cambio del actualizador; devuelve la función para dejar de escuchar
+//   printHtml(html)              abre el diálogo de impresión de Windows con ese documento → { ok, message }
 //   copyDiagnostics()            copia al portapapeles el informe de diagnóstico → { ok }
 export const desktop = typeof window !== 'undefined' ? (window.desktop ?? null) : null;

@@ -8,6 +8,7 @@ import ProductPicker from '../../products/components/ProductPicker';
 import useBusinessSettings from '../../settings/hooks/useBusinessSettings';
 import CartTable from '../components/CartTable';
 import CodeEntry from '../components/CodeEntry';
+import PrintReceiptButton from '../components/PrintReceiptButton';
 import SaleSummary from '../components/SaleSummary';
 import useNewSale from '../hooks/useNewSale';
 import { openReceiptPdf } from '../pdf/receiptPdf';
@@ -42,6 +43,7 @@ export default function NewSalePage() {
               >
                 Comprobante PDF
               </Button>
+              <PrintReceiptButton color="inherit" size="small" sale={sale.lastSale} business={business.settings} />
               <IconButton color="inherit" size="small" aria-label="Cerrar" onClick={sale.dismissLastSale}>
                 <CloseIcon fontSize="small" />
               </IconButton>
