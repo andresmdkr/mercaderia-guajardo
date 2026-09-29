@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   AppBar,
-  Avatar,
   Box,
   Button,
   Container,
@@ -14,30 +12,17 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
-  Tooltip,
   Typography,
   alpha,
   useTheme,
 } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCartOutlined';
-import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
-import { logout } from '../redux/sessionSlice';
 import { menuItems, settingsMenuItem } from '../theme/sections';
 import SectionTabs from './SectionTabs';
-import ThemeToggle from './ThemeToggle';
+import UserPill from './UserPill';
 
 const DRAWER_WIDTH = 252;
-
-// "Usuario de prueba" → "UP" (las palabras chicas como "de" no cuentan)
-const SMALL_WORDS = ['de', 'del', 'la', 'las', 'el', 'los', 'y'];
-const initials = (name = '') =>
-  name
-    .split(/\s+/)
-    .filter((word) => word && !SMALL_WORDS.includes(word.toLowerCase()))
-    .slice(0, 2)
-    .map((word) => word[0].toUpperCase())
-    .join('');
 
 // Qué ítem del menú corresponde a la pantalla actual (el de Ventas también marca Nueva venta y Resúmenes, etc.).
 function useActiveKey() {
@@ -48,8 +33,8 @@ function useActiveKey() {
   return pathname === '/' ? 'home' : null;
 }
 
-// Un ítem del menú: grande, con ícono y nombre. Todos iguales y neutros; el que estás usando lleva el color principal
-// y una barrita a la izquierda.
+// Un ítem del menú: grande, con ícono y nombre. Todos iguales y neutros; el que estás usando lleva una pastilla suave
+// con el color principal.
 function NavItem({ item, active, onNavigate }) {
   const Icon = item.icon;
 
@@ -67,9 +52,8 @@ function NavItem({ item, active, onNavigate }) {
         color: 'text.primary',
         '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.05) },
         '&.Mui-selected': {
-          bgcolor: alpha(theme.palette.primary.main, 0.11),
-          '&::before': { content: '""', position: 'absolute', left: 0, top: 10, bottom: 10, width: 3, borderRadius: 3, bgcolor: 'primary.main' },
-          '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
+          bgcolor: alpha(theme.palette.primary.main, 0.12),
+          '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.16) },
         },
       })}
     >
@@ -82,9 +66,7 @@ function NavItem({ item, active, onNavigate }) {
 }
 
 function SidebarContent({ onNavigate }) {
-  const dispatch = useDispatch();
   const theme = useTheme();
-  const user = useSelector((state) => state.session.user);
   const activeKey = useActiveKey();
   const salesColor = theme.palette.sections.sales;
 
@@ -113,33 +95,15 @@ function SidebarContent({ onNavigate }) {
 
       <Box component="nav" aria-label="Menú principal" sx={{ flexGrow: 1 }}>
         <List disablePadding>
-          {menuItems.map((item) => (
+          {[...menuItems, settingsMenuItem].map((item) => (
             <NavItem key={item.key} item={item} active={activeKey === item.key} onNavigate={onNavigate} />
           ))}
         </List>
       </Box>
 
-      {/* Pie: Configuración con el tema, y quién está usando la app con el botón de salir */}
+      {/* Pie: quién está usando la app, con el modo claro/oscuro y cerrar sesión a la vista */}
       <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Box sx={{ flexGrow: 1 }}>
-            <NavItem item={settingsMenuItem} active={activeKey === 'settings'} onNavigate={onNavigate} />
-          </Box>
-          <ThemeToggle />
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, pt: 0.5, pb: 0.5 }}>
-          <Avatar sx={{ width: 28, height: 28, fontSize: 11, fontWeight: 700, bgcolor: alpha(theme.palette.primary.main, 0.18), color: 'primary.main' }}>
-            {initials(user?.name)}
-          </Avatar>
-          <Typography variant="body2" noWrap title={user?.name} sx={{ fontWeight: 600, fontSize: 13, minWidth: 0, flexGrow: 1 }}>
-            {user?.name}
-          </Typography>
-          <Tooltip title="Salir">
-            <IconButton size="small" aria-label="Salir" sx={{ p: 0.5 }} onClick={() => dispatch(logout())}>
-              <LogoutIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
+        <UserPill />
       </Box>
     </Box>
   );
