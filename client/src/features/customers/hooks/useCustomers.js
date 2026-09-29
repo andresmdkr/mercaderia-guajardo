@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import useSort from '../../../hooks/useSort';
 import { getErrorMessage } from '../../../services/api';
 import { fetchCustomers } from '../api/customersApi';
 
@@ -12,6 +13,7 @@ export default function useCustomers() {
   const [showInactive, setShowInactiveFilter] = useState(false);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
+  const { sort, toggleSort } = useSort(() => setPage(1));
 
   const [data, setData] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,7 @@ export default function useCustomers() {
           limit: PAGE_SIZE,
           search: debouncedSearch || undefined,
           active: !showInactive,
+          ...(sort.field ? { sort: sort.field, order: sort.direction } : {}),
         });
         if (!cancelled) {
           setData(result);
@@ -52,7 +55,7 @@ export default function useCustomers() {
     return () => {
       cancelled = true;
     };
-  }, [page, debouncedSearch, showInactive, reloadKey]);
+  }, [page, debouncedSearch, showInactive, sort.field, sort.direction, reloadKey]);
 
   const setShowInactive = (value) => {
     setShowInactiveFilter(value);
@@ -80,6 +83,8 @@ export default function useCustomers() {
     showInactive,
     hasActiveFilters,
     clearFilters,
+    sort,
+    toggleSort,
     setSearch: setSearchText,
     setShowInactive,
     setPage,

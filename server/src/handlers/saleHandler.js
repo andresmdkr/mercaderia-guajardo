@@ -1,6 +1,7 @@
 const saleController = require('../controllers/saleController');
 const AppError = require('../utils/AppError');
 const { parseDate, parseId, toPositiveInt } = require('../utils/parse');
+const { parseSorting } = require('../utils/sorting');
 
 const MAX_LIMIT = 100;
 const MAX_LINES = 100;
@@ -69,6 +70,7 @@ async function list(req, res, next) {
       status: status || undefined,
       customerId: toPositiveInt(customerId, undefined),
       paymentMethod: paymentMethod || undefined,
+      sorting: parseSorting(req.query),
     });
     res.json(result);
   } catch (error) {

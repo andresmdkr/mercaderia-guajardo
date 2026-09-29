@@ -130,6 +130,8 @@ export default function ProductsPage() {
         page={products.page}
         pageSize={products.pageSize}
         onPageChange={products.setPage}
+        sort={products.sort}
+        onSort={products.toggleSort}
         onEdit={setEditing}
       />
 

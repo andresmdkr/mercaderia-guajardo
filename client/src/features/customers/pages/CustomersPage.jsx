@@ -90,6 +90,8 @@ export default function CustomersPage() {
         page={customers.page}
         pageSize={customers.pageSize}
         onPageChange={customers.setPage}
+        sort={customers.sort}
+        onSort={customers.toggleSort}
         onEdit={setEditing}
       />
 

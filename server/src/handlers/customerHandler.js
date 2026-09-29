@@ -1,6 +1,7 @@
 const customerController = require('../controllers/customerController');
 const AppError = require('../utils/AppError');
 const { parseBool, parseId, toPositiveInt } = require('../utils/parse');
+const { parseSorting } = require('../utils/sorting');
 
 const MAX_LIMIT = 100;
 const MIN_PHONE_DIGITS = 6;
@@ -38,6 +39,7 @@ async function list(req, res, next) {
       limit: Math.min(toPositiveInt(limit, 20), MAX_LIMIT),
       search: search?.trim(),
       active: parseBool(active),
+      sorting: parseSorting(req.query),
     });
     res.json(result);
   } catch (error) {

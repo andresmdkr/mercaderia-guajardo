@@ -1,6 +1,7 @@
 const productController = require('../controllers/productController');
 const AppError = require('../utils/AppError');
 const { parseBool, parseId, toPositiveInt } = require('../utils/parse');
+const { parseSorting } = require('../utils/sorting');
 
 const MAX_LIMIT = 100;
 
@@ -51,6 +52,7 @@ async function list(req, res, next) {
       categoryId: toPositiveInt(categoryId, undefined),
       lowStock: parseBool(lowStock),
       active: parseBool(active),
+      sorting: parseSorting(req.query),
     });
     res.json(result);
   } catch (error) {

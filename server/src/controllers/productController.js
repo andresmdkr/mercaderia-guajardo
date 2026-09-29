@@ -1,12 +1,24 @@
-const { Op, QueryTypes, col, fn, where } = require('sequelize');
+const { Op, QueryTypes, col, fn, literal, where } = require('sequelize');
 const { sequelize, Category, Product } = require('../db');
 const AppError = require('../utils/AppError');
+const { buildOrder } = require('../utils/sorting');
 const { searchCondition } = require('../utils/searchText');
 const { applyMovement } = require('./stockController');
 
 const includeCategory = [{ model: Category, as: 'category', attributes: ['id', 'name'] }];
 
-async function list({ page, limit, search, categoryId, lowStock, active }) {
+// Columnas por las que se puede ordenar el listado (texto sin distinguir mayúsculas). Siempre desempata por id.
+const SORT_FIELDS = {
+  code: (d) => [[literal('LOWER("Product"."code")'), d], ['id', 'ASC']],
+  name: (d) => [[literal('LOWER("Product"."name")'), d], ['id', 'ASC']],
+  category: (d) => [[literal('LOWER("category"."name")'), d], [literal('LOWER("Product"."name")'), 'ASC'], ['id', 'ASC']],
+  costPrice: (d) => [['costPrice', d], [literal('LOWER("Product"."name")'), 'ASC'], ['id', 'ASC']],
+  salePrice: (d) => [['salePrice', d], [literal('LOWER("Product"."name")'), 'ASC'], ['id', 'ASC']],
+  stock: (d) => [['stock', d], [literal('LOWER("Product"."name")'), 'ASC'], ['id', 'ASC']],
+  minStock: (d) => [['minStock', d], [literal('LOWER("Product"."name")'), 'ASC'], ['id', 'ASC']],
+};
+
+async function list({ page, limit, search, categoryId, lowStock, active, sorting }) {
   const conditions = [];
 
   // Ignora mayúsculas y tildes. Las columnas van calificadas porque la consulta también une la tabla de categorías.
@@ -18,7 +30,7 @@ async function list({ page, limit, search, categoryId, lowStock, active }) {
   const { rows, count } = await Product.findAndCountAll({
     where: { [Op.and]: conditions },
     include: includeCategory,
-    order: [['name', 'ASC']],
+    order: buildOrder(sorting ?? {}, SORT_FIELDS, SORT_FIELDS.name('ASC')),
     limit,
     offset: (page - 1) * limit,
   });

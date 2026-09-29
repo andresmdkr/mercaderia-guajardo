@@ -2,8 +2,16 @@ const { Op, literal, where } = require('sequelize');
 const { Customer } = require('../db');
 const AppError = require('../utils/AppError');
 const { searchCondition } = require('../utils/searchText');
+const { buildOrder } = require('../utils/sorting');
 
-async function list({ page, limit, search, active }) {
+// Columnas por las que se puede ordenar el listado (texto sin distinguir mayúsculas). Siempre desempata por id.
+const SORT_FIELDS = {
+  name: (d) => [[literal('LOWER("Customer"."name")'), d], ['id', 'ASC']],
+  phone: (d) => [[literal(`LOWER(COALESCE("Customer"."phone", ''))`), d], [literal('LOWER("Customer"."name")'), 'ASC'], ['id', 'ASC']],
+  email: (d) => [[literal(`LOWER(COALESCE("Customer"."email", ''))`), d], [literal('LOWER("Customer"."name")'), 'ASC'], ['id', 'ASC']],
+};
+
+async function list({ page, limit, search, active, sorting }) {
   const conditions = [];
 
   // Ignora mayúsculas y tildes (nombre, teléfono y email).
@@ -12,7 +20,7 @@ async function list({ page, limit, search, active }) {
 
   const { rows, count } = await Customer.findAndCountAll({
     where: { [Op.and]: conditions },
-    order: [['name', 'ASC']],
+    order: buildOrder(sorting ?? {}, SORT_FIELDS, SORT_FIELDS.name('ASC')),
     limit,
     offset: (page - 1) * limit,
   });

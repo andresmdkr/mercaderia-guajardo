@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import useSort from '../../../hooks/useSort';
 import { getErrorMessage } from '../../../services/api';
 import { fetchProducts } from '../api/productsApi';
 
@@ -14,6 +15,7 @@ export default function useProducts() {
   const [showInactive, setShowInactiveFilter] = useState(false);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
+  const { sort, toggleSort } = useSort(() => setPage(1));
 
   const [data, setData] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
@@ -40,6 +42,7 @@ export default function useProducts() {
           categoryId: categoryId || undefined,
           lowStock: lowStock || undefined,
           active: !showInactive,
+          ...(sort.field ? { sort: sort.field, order: sort.direction } : {}),
         });
         if (!cancelled) {
           setData(result);
@@ -56,7 +59,7 @@ export default function useProducts() {
     return () => {
       cancelled = true;
     };
-  }, [page, debouncedSearch, categoryId, lowStock, showInactive, reloadKey]);
+  }, [page, debouncedSearch, categoryId, lowStock, showInactive, sort.field, sort.direction, reloadKey]);
 
   const setCategoryId = (value) => {
     setCategoryIdFilter(value);
@@ -99,6 +102,8 @@ export default function useProducts() {
     showInactive,
     hasActiveFilters,
     clearFilters,
+    sort,
+    toggleSort,
     setSearch: setSearchText,
     setCategoryId,
     setLowStock,

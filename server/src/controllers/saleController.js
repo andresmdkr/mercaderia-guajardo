@@ -2,6 +2,7 @@ const { Op } = require('sequelize');
 const { sequelize, Customer, Product, Sale, SaleItem, User } = require('../db');
 const AppError = require('../utils/AppError');
 const { fromCents, toCents } = require('../utils/money');
+const { buildOrder } = require('../utils/sorting');
 const { applyMovement } = require('./stockController');
 
 const includeDetail = [
@@ -30,7 +31,14 @@ async function getById(id) {
   return sale;
 }
 
-async function list({ page, limit, from, to, status, customerId, paymentMethod }) {
+// Columnas por las que se puede ordenar el listado (por defecto: las más nuevas primero).
+const SORT_FIELDS = {
+  id: (d) => [['id', d]],
+  createdAt: (d) => [['createdAt', d], ['id', d]],
+  total: (d) => [['total', d], ['id', 'DESC']],
+};
+
+async function list({ page, limit, from, to, status, customerId, paymentMethod, sorting }) {
   const conditions = [];
   if (from) conditions.push({ createdAt: { [Op.gte]: from } });
   if (to) conditions.push({ createdAt: { [Op.lte]: to } });
@@ -41,10 +49,10 @@ async function list({ page, limit, from, to, status, customerId, paymentMethod }
   const { rows, count } = await Sale.findAndCountAll({
     where: { [Op.and]: conditions },
     include: includeSummary,
-    order: [
+    order: buildOrder(sorting ?? {}, SORT_FIELDS, [
       ['createdAt', 'DESC'],
       ['id', 'DESC'],
-    ],
+    ]),
     limit,
     offset: (page - 1) * limit,
   });

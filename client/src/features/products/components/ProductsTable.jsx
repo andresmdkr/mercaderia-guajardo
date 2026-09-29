@@ -10,23 +10,38 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import SortableHeaderCell from '../../../components/SortableHeaderCell';
 import { formatMoney } from '../../../utils/format';
 
 // Hacer clic en una fila abre el producto para editarlo (o darlo de baja).
-export default function ProductsTable({ items, total, page, pageSize, onPageChange, onEdit }) {
+export default function ProductsTable({ items, total, page, pageSize, onPageChange, onEdit, sort, onSort }) {
   return (
     <Paper>
       <TableContainer>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Código</TableCell>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Categoría</TableCell>
-              <TableCell align="right">Costo</TableCell>
-              <TableCell align="right">Venta</TableCell>
-              <TableCell align="right">Stock</TableCell>
-              <TableCell align="right">Mínimo</TableCell>
+              <SortableHeaderCell field="code" sort={sort} onSort={onSort}>
+                Código
+              </SortableHeaderCell>
+              <SortableHeaderCell field="name" sort={sort} onSort={onSort}>
+                Nombre
+              </SortableHeaderCell>
+              <SortableHeaderCell field="category" sort={sort} onSort={onSort}>
+                Categoría
+              </SortableHeaderCell>
+              <SortableHeaderCell field="costPrice" sort={sort} onSort={onSort} align="right">
+                Costo
+              </SortableHeaderCell>
+              <SortableHeaderCell field="salePrice" sort={sort} onSort={onSort} align="right">
+                Venta
+              </SortableHeaderCell>
+              <SortableHeaderCell field="stock" sort={sort} onSort={onSort} align="right">
+                Stock
+              </SortableHeaderCell>
+              <SortableHeaderCell field="minStock" sort={sort} onSort={onSort} align="right">
+                Mínimo
+              </SortableHeaderCell>
             </TableRow>
           </TableHead>
           <TableBody>

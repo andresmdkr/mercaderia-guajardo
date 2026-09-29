@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Alert, Box, Button, Chip, CircularProgress, MenuItem, Snackbar, TextField } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, MenuItem, Snackbar, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ClearFiltersButton from '../../../components/ClearFiltersButton';
 import PageHeader from '../../../components/PageHeader';
+import PeriodFilter from '../../../components/PeriodFilter';
 import CustomerPicker from '../../customers/components/CustomerPicker';
 import SaleDetailDialog from '../components/SaleDetailDialog';
 import SalesTable from '../components/SalesTable';
-import { DATE_PRESETS } from '../../../utils/dateRange';
 import useSales from '../hooks/useSales';
 import { PAYMENT_METHODS, SALE_STATUSES } from '../salesConstants';
-
-const dateFieldProps = { size: 'small', type: 'date', slotProps: { inputLabel: { shrink: true } }, sx: { bgcolor: 'background.paper' } };
 
 export default function SalesPage() {
   const sales = useSales();
@@ -49,22 +47,12 @@ export default function SalesPage() {
         }
       />
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-        {Object.entries(DATE_PRESETS).map(([key, label]) => (
-          <Chip
-            key={key}
-            label={label}
-            clickable
-            color={sales.filters.preset === key ? 'primary' : 'default'}
-            variant={sales.filters.preset === key ? 'filled' : 'outlined'}
-            onClick={() => sales.setPreset(key)}
-          />
-        ))}
+      {/* Período (accesos rápidos + fechas): el mismo filtro que usan Reportes y Resúmenes */}
+      <Box sx={{ mb: 2 }}>
+        <PeriodFilter period={sales.filters} onPreset={sales.setPreset} onDate={sales.setDate} />
       </Box>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 2, mb: 2 }}>
-        <TextField label="Desde" value={sales.filters.from} onChange={(event) => sales.setDate('from', event.target.value)} {...dateFieldProps} />
-        <TextField label="Hasta" value={sales.filters.to} onChange={(event) => sales.setDate('to', event.target.value)} {...dateFieldProps} />
         <TextField
           select
           size="small"
@@ -113,6 +101,8 @@ export default function SalesPage() {
         page={sales.page}
         pageSize={sales.pageSize}
         onPageChange={sales.setPage}
+        sort={sales.sort}
+        onSort={sales.toggleSort}
         onOpen={(sale) => setOpenSaleId(sale.id)}
       />
 

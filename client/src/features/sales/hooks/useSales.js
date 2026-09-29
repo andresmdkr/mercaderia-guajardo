@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import useSort from '../../../hooks/useSort';
 import { getErrorMessage } from '../../../services/api';
 import { presetRange } from '../../../utils/dateRange';
 import { fetchSales } from '../api/salesApi';
@@ -19,6 +20,7 @@ export default function useSales() {
   const [filters, setFilters] = useState(defaultFilters);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
+  const { sort, toggleSort } = useSort(() => setPage(1));
 
   const [data, setData] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
@@ -38,6 +40,7 @@ export default function useSales() {
           status: filters.status || undefined,
           paymentMethod: filters.paymentMethod || undefined,
           customerId: filters.customer?.id,
+          ...(sort.field ? { sort: sort.field, order: sort.direction } : {}),
         });
         if (!cancelled) {
           setData(result);
@@ -54,7 +57,7 @@ export default function useSales() {
     return () => {
       cancelled = true;
     };
-  }, [page, filters, reloadKey]);
+  }, [page, filters, sort.field, sort.direction, reloadKey]);
 
   const setFilter = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -90,6 +93,8 @@ export default function useSales() {
     filters,
     hasActiveFilters,
     clearFilters,
+    sort,
+    toggleSort,
     setFilter,
     setPreset,
     setDate,

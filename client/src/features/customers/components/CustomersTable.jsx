@@ -15,11 +15,12 @@ import {
 } from '@mui/material';
 import NotesIcon from '@mui/icons-material/StickyNote2Outlined';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import SortableHeaderCell from '../../../components/SortableHeaderCell';
 import { whatsappUrl } from '../../../utils/whatsapp';
 import WhatsAppDialog from './WhatsAppDialog';
 
 // Hacer clic en una fila abre el cliente para editarlo (o darlo de baja).
-export default function CustomersTable({ items, total, page, pageSize, onPageChange, onEdit }) {
+export default function CustomersTable({ items, total, page, pageSize, onPageChange, onEdit, sort, onSort }) {
   const [whatsappCustomer, setWhatsappCustomer] = useState(null);
 
   return (
@@ -28,9 +29,15 @@ export default function CustomersTable({ items, total, page, pageSize, onPageCha
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Teléfono</TableCell>
-              <TableCell>Email</TableCell>
+              <SortableHeaderCell field="name" sort={sort} onSort={onSort}>
+                Nombre
+              </SortableHeaderCell>
+              <SortableHeaderCell field="phone" sort={sort} onSort={onSort}>
+                Teléfono
+              </SortableHeaderCell>
+              <SortableHeaderCell field="email" sort={sort} onSort={onSort}>
+                Email
+              </SortableHeaderCell>
               <TableCell>Dirección</TableCell>
             </TableRow>
           </TableHead>

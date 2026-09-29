@@ -10,22 +10,29 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import SortableHeaderCell from '../../../components/SortableHeaderCell';
 import { formatDateTime, formatMoney, formatSaleNumber } from '../../../utils/format';
 import { PAYMENT_METHODS, SALE_STATUSES } from '../salesConstants';
 
 // Hacer clic en una fila abre el detalle de la venta.
-export default function SalesTable({ items, total, page, pageSize, onPageChange, onOpen }) {
+export default function SalesTable({ items, total, page, pageSize, onPageChange, onOpen, sort, onSort }) {
   return (
     <Paper>
       <TableContainer>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>N°</TableCell>
-              <TableCell>Fecha</TableCell>
+              <SortableHeaderCell field="id" sort={sort} onSort={onSort}>
+                N°
+              </SortableHeaderCell>
+              <SortableHeaderCell field="createdAt" sort={sort} onSort={onSort}>
+                Fecha
+              </SortableHeaderCell>
               <TableCell>Cliente</TableCell>
               <TableCell>Pago</TableCell>
-              <TableCell align="right">Total</TableCell>
+              <SortableHeaderCell field="total" sort={sort} onSort={onSort} align="right">
+                Total
+              </SortableHeaderCell>
               <TableCell>Estado</TableCell>
             </TableRow>
           </TableHead>
