@@ -12,7 +12,8 @@
     "seed": "node src/scripts/seed.js",
     "backup": "node src/scripts/backup.js",
     "restore": "node src/scripts/restore.js",
-    "test": "node --test"
+    "test": "node --test",
+    "load-test": "node src/scripts/loadTest.js"
   },
   "keywords": [],
   "author": "",
