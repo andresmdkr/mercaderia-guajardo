@@ -5,7 +5,8 @@ const { parseBool, parseId, toPositiveInt } = require('../utils/parse');
 const MAX_LIMIT = 100;
 
 // Valida el body de alta / edición y devuelve solo los campos permitidos.
-function validateProductBody(body) {
+// Al crear, el código puede venir vacío: entonces el sistema le asigna el siguiente (ver productController.create).
+function validateProductBody(body, { codeOptional = false } = {}) {
   if ('stock' in body) {
     throw new AppError('El stock no se edita desde el producto, se cambia con movimientos de stock');
   }
@@ -13,7 +14,7 @@ function validateProductBody(body) {
   const code = typeof body.code === 'string' ? body.code.trim() : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';
 
-  if (!code || code.length > 50) throw new AppError('El código es obligatorio (máx. 50 caracteres)');
+  if (code.length > 50 || (!code && !codeOptional)) throw new AppError('El código es obligatorio (máx. 50 caracteres)');
   if (!name || name.length > 150) throw new AppError('El nombre es obligatorio (máx. 150 caracteres)');
 
   // La categoría es opcional: null o vacío = sin categoría.
@@ -84,7 +85,7 @@ async function getByCode(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const product = await productController.create(validateProductBody(req.body), {
+    const product = await productController.create(validateProductBody(req.body, { codeOptional: true }), {
       initialStock: parseInitialStock(req.body.initialStock),
       userId: req.user.id,
     });

@@ -9,10 +9,12 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  InputAdornment,
   TextField,
   Typography,
   createFilterOptions,
 } from '@mui/material';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import ActiveToggleButton from '../../../components/ActiveToggleButton';
 import { getErrorMessage } from '../../../services/api';
 
@@ -32,9 +34,10 @@ function toFormValues(product) {
 }
 
 // Validación para dar feedback rápido; el backend vuelve a validar todo.
-function validate(values) {
+function validate(values, isEditing) {
   const errors = {};
-  if (!values.code.trim()) errors.code = 'Obligatorio';
+  // Al crear, el código es opcional (se genera uno automático); al editar es obligatorio.
+  if (isEditing && !values.code.trim()) errors.code = 'Obligatorio';
   if (!values.name.trim()) errors.name = 'Obligatorio';
   if (values.costPrice === '' || Number(values.costPrice) < 0) errors.costPrice = 'Debe ser 0 o más';
   if (values.salePrice === '' || Number(values.salePrice) < 0) errors.salePrice = 'Debe ser 0 o más';
@@ -53,11 +56,19 @@ export default function ProductForm({ product, categories, onCreateCategory, onC
   const [serverError, setServerError] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  // El lector de códigos de barras "escribe" el código y termina con Enter: en vez de enviar el formulario a medio
+  // llenar, el Enter pasa al campo siguiente (el nombre).
+  const handleCodeKeyDown = (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    event.target.form?.elements.namedItem('name')?.focus(); // event.target = el input (currentTarget es el contenedor)
+  };
+
   const handleChange = (field) => (event) => setValues((prev) => ({ ...prev, [field]: event.target.value }));
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const found = validate(values);
+    const found = validate(values, Boolean(product));
     setErrors(found);
     if (Object.keys(found).length > 0) return;
 
@@ -126,8 +137,23 @@ export default function ProductForm({ product, categories, onCreateCategory, onC
           </Alert>
         )}
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
-          <Grid size={{ xs: 12, sm: 4 }}>{field('code', 'Código', { autoFocus: true })}</Grid>
-          <Grid size={{ xs: 12, sm: 8 }}>{field('name', 'Nombre')}</Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>{field('code', 'Código', {
+              autoFocus: true,
+              placeholder: product ? undefined : 'Escaneá o escribí',
+              onKeyDown: handleCodeKeyDown,
+              onFocus: (event) => event.target.select(), // al escanear sobre un código ya escrito, lo reemplaza
+              helperText: errors.code ?? (product ? undefined : 'Vacío = automático (P00001…)'),
+              slotProps: {
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <QrCodeScannerIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                },
+              },
+            })}</Grid>
+          <Grid size={{ xs: 12, sm: 8 }}>{field('name', 'Nombre', { name: 'name' })}</Grid>
           <Grid size={12}>
             <Autocomplete
               value={category}

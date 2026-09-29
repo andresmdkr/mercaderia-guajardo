@@ -43,10 +43,10 @@ describe('catálogo', () => {
         { code: 'X1', name: 'x', costPrice: 1, salePrice: 2, stock: 5 },
         { code: 'X1', name: 'x', costPrice: -1, salePrice: 2 },
         { code: 'X1', name: 'x', costPrice: 1, salePrice: 'abc' },
-        { name: 'sin código', costPrice: 1, salePrice: 2 },
         { code: 'X1', name: 'x', costPrice: 1, salePrice: 2, minStock: 1.5 },
         { code: 'X1', name: 'x', costPrice: 1, salePrice: 2, initialStock: -3 },
         { code: 'X1', name: 'x', costPrice: 1, salePrice: 2, categoryId: 99999 },
+        { code: 'x'.repeat(51), name: 'x', costPrice: 1, salePrice: 2 }, // código demasiado largo
       ];
       for (const body of invalid) assert.equal((await api.post('/api/products', body)).status, 400, JSON.stringify(body));
       assert.equal((await api.post('/api/products', 'no-es-json')).status, 400);
