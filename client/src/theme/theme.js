@@ -33,7 +33,7 @@ const sectionColors = {
 
 const palettes = {
   light: {
-    primary: { main: '#C15F3C', contrastText: '#FFFFFF' },
+    primary: { main: '#B5532F', contrastText: '#FFFFFF' }, // terracota apenas más oscuro que #C15F3C: contraste 4,95:1 con letra blanca (antes 4,2:1)
     // El naranja por defecto de MUI tiene poco contraste con texto blanco: se oscurece.
     warning: { main: '#B45309', contrastText: '#FFFFFF' },
     background: { default: '#FAF9F5', paper: '#FFFFFF' },
