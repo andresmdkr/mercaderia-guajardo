@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getErrorMessage } from '../../../services/api';
 import { fetchMovements } from '../api/stockApi';
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 20;
 
 // Listado de movimientos con filtros (producto, tipo, rango de fechas) y paginación.
 export default function useMovements() {

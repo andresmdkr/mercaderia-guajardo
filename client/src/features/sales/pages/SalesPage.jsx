@@ -30,7 +30,18 @@ export default function SalesPage() {
         actions={
           <>
             {sales.loading && <CircularProgress size={22} />}
-            <Button variant="contained" startIcon={<AddIcon />} component={RouterLink} to="/sales/new">
+            {/* La acción de vender es siempre verde (igual que el botón del menú), no el terracota de las demás altas */}
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              component={RouterLink}
+              to="/sales/new"
+              sx={(theme) => ({
+                bgcolor: theme.palette.sections.sales,
+                color: theme.palette.getContrastText(theme.palette.sections.sales),
+                '&:hover': { bgcolor: theme.palette.sections.sales, filter: 'brightness(0.92)' },
+              })}
+            >
               Nueva venta
             </Button>
           </>

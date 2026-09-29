@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getErrorMessage } from '../../../services/api';
 import { fetchProducts } from '../api/productsApi';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 const SEARCH_DELAY_MS = 350;
 
 // Maneja listado, filtros, paginación y recarga de productos.

@@ -3,7 +3,7 @@ import { getErrorMessage } from '../../../services/api';
 import { presetRange } from '../../../utils/dateRange';
 import { fetchSales } from '../api/salesApi';
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 20;
 
 // Listado de ventas con filtros (período, estado, medio de pago, cliente) y paginación.
 export default function useSales() {

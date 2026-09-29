@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   AppBar,
+  Avatar,
   Box,
   Button,
   Collapse,
@@ -26,6 +27,16 @@ import { sections } from '../theme/sections';
 import ThemeToggle from './ThemeToggle';
 
 const DRAWER_WIDTH = 252;
+
+// "Usuario de prueba" → "UP" (las palabras chicas como "de" no cuentan)
+const SMALL_WORDS = ['de', 'del', 'la', 'las', 'el', 'los', 'y'];
+const initials = (name = '') =>
+  name
+    .split(/\s+/)
+    .filter((word) => word && !SMALL_WORDS.includes(word.toLowerCase()))
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join('');
 
 function NavItem({ section, onNavigate, nested = false }) {
   const theme = useTheme();
@@ -52,14 +63,18 @@ function NavItem({ section, onNavigate, nested = false }) {
         sx={{
           borderRadius: 2.5,
           mb: 0.5,
-          pl: nested ? 4.5 : 2,
+          pl: nested ? 3.5 : 2,
           '&.Mui-selected': { bgcolor: alpha(color, 0.14), '&:hover': { bgcolor: alpha(color, 0.2) } },
         }}
       >
-        <ListItemIcon sx={{ minWidth: 38, color }}>
+        <ListItemIcon sx={{ minWidth: nested ? 34 : 38, color }}>
           <Icon fontSize="small" />
         </ListItemIcon>
-        <ListItemText primary={section.label} slotProps={{ primary: { fontSize: 14.5, fontWeight: selected ? 600 : 500 } }} />
+        {/* Los subitems van un poco más chicos y en una sola línea ("Actualizar precios" se partía en dos) */}
+        <ListItemText
+          primary={section.label}
+          slotProps={{ primary: { fontSize: nested ? 14 : 14.5, fontWeight: selected ? 600 : 500, noWrap: true } }}
+        />
       </ListItemButton>
 
       {hasChildren && (
@@ -111,14 +126,22 @@ function SidebarContent({ onNavigate }) {
         ))}
       </List>
 
-      <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2, px: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="body2" noWrap sx={{ flexGrow: 1, fontWeight: 600 }}>
-          {user?.name}
-        </Typography>
-        <ThemeToggle />
-        <Button size="small" color="inherit" onClick={() => dispatch(logout())} startIcon={<LogoutIcon fontSize="small" />}>
-          Salir
-        </Button>
+      {/* Pie del menú en dos filas: quién está usando la app (con el nombre completo) y, debajo, tema y salir */}
+      <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2, px: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
+          <Avatar sx={{ width: 32, height: 32, fontSize: 13, fontWeight: 700, bgcolor: alpha(theme.palette.primary.main, 0.18), color: 'primary.main' }}>
+            {initials(user?.name)}
+          </Avatar>
+          <Typography variant="body2" noWrap title={user?.name} sx={{ fontWeight: 600, minWidth: 0 }}>
+            {user?.name}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <ThemeToggle />
+          <Button size="small" color="inherit" onClick={() => dispatch(logout())} startIcon={<LogoutIcon fontSize="small" />}>
+            Salir
+          </Button>
+        </Box>
       </Box>
     </Box>
   );

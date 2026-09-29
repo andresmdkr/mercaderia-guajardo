@@ -80,7 +80,8 @@ export function buildTheme(mode) {
       },
       MuiTableCell: {
         styleOverrides: {
-          root: ({ theme }) => ({ borderColor: theme.palette.divider }),
+          // Cifras tabulares: todos los dígitos ocupan el mismo ancho, así los importes quedan alineados por decimales.
+          root: ({ theme }) => ({ borderColor: theme.palette.divider, fontVariantNumeric: 'tabular-nums' }),
           head: ({ theme }) => ({
             fontSize: 12,
             fontWeight: 600,

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getErrorMessage } from '../../../services/api';
 import { fetchCustomers } from '../api/customersApi';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 const SEARCH_DELAY_MS = 350;
 
 // Maneja listado, búsqueda, paginación y recarga de clientes.
