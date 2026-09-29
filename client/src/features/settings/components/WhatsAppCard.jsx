@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Box, Button, Typography } from '@mui/material';
+import { Alert, Box, Button, Divider, Typography } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { desktop } from '../../../services/desktop';
 import ChoiceOption from './ChoiceOption';
 import SettingsCard from './SettingsCard';
+import SwitchOption from './SwitchOption';
 
 // Dónde se abre WhatsApp cuando en Clientes se toca "Abrir en esta computadora". Solo en la app instalada.
 export default function WhatsAppCard() {
-  const [settings, setSettings] = useState(null); // { mode, program }
+  const [settings, setSettings] = useState(null); // { mode, program, keepAlive, preload }
 
   useEffect(() => {
     let cancelled = false;
@@ -33,11 +34,17 @@ export default function WhatsAppCard() {
     await desktop.setWhatsappMode(mode);
   };
 
+  const handleOption = (name) => async (value) => {
+    setSettings((current) => ({ ...current, [name]: value }));
+    await desktop.setWhatsappOption(name, value);
+  };
+
   const option = (value, title, description, children) => (
     <ChoiceOption name="whatsapp-mode" value={value} selected={settings.mode === value} onSelect={handleSelect} title={title} description={description}>
       {children}
     </ChoiceOption>
   );
+  const isProgram = settings.mode === 'program';
 
   return (
     <SettingsCard
@@ -61,6 +68,36 @@ export default function WhatsAppCard() {
             </Typography>
           </Box>
         )}
+      </Box>
+
+      <Divider sx={{ my: 3 }} />
+      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+        Que WhatsApp abra más rápido
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Cada vez que el programa arranca, WhatsApp tarda en cargar sus chats. Estas dos opciones lo evitan dejándolo ya corriendo, pero
+        <strong> ocupan memoria de la computadora todo el día</strong> (unos 400 a 650 MB). Se prueban y, si la PC se pone lenta, se apagan.
+      </Typography>
+      {!isProgram && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Sirven solo con la opción «En otra aplicación» (WhatsApp Guajardo).
+        </Alert>
+      )}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <SwitchOption
+          checked={settings.keepAlive}
+          disabled={!isProgram}
+          onChange={handleOption('keepAlive')}
+          title="Seguir abierto en segundo plano al cerrar su ventana"
+          description="Al cerrar la ventana de WhatsApp el programa no se cierra: queda un ícono junto al reloj de Windows para volver a abrirlo al instante. Para cerrarlo del todo, «Salir» en ese ícono."
+        />
+        <SwitchOption
+          checked={settings.preload}
+          disabled={!isProgram}
+          onChange={handleOption('preload')}
+          title="Cargarlo al abrir esta aplicación (queda oculto)"
+          description="Unos segundos después de abrir Mercadería Guajardo, WhatsApp arranca sin mostrarse y termina de cargar solo. Cuando lo necesites ya está listo. Los cambios se aplican la próxima vez que abras la aplicación."
+        />
       </Box>
     </SettingsCard>
   );

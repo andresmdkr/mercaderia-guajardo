@@ -10,6 +10,7 @@
 //   shareWhatsappFile({ url, filename, base64 })  guarda el PDF, lo deja copiado como archivo y abre el chat → { ok, message, mode, copied, autoPaste }
 //   getWhatsappSettings()        → { mode: 'integrated' (ventana de la app) | 'browser' (navegador del sistema) | 'program' (otro programa), program }
 //   setWhatsappMode(mode)        cambia esa opción → { ok }
+//   setWhatsappOption(name, value)  'keepAlive' (WhatsApp Guajardo sigue corriendo al cerrar su ventana) o 'preload' (se abre oculto al iniciar la app) → { ok }
 //   chooseWhatsappProgram()      abre el selector de archivos para elegir el programa (.exe) → { canceled, program }
 //   getUpdateStatus()            estado del actualizador → { status, message }
 //   checkForUpdates()            busca actualizaciones (el avance llega por onUpdateStatus)

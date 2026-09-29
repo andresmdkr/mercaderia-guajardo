@@ -185,7 +185,7 @@ async function open(url, { icon, log }, { paste = false, file = null } = {}) {
 // Lanza otro programa de WhatsApp (por ejemplo la prueba aparte) pasándole solo el número. El programa lo elige el
 // usuario en Configuración; acá se comprueba que exista, que sea un .exe y se lo abre sin consola ni intérprete de comandos.
 // Si no se puede abrir, se avisa y se ofrece el navegador. Devuelve { ok, message }.
-function openWithProgram(program, url, { log }, { paste = false, file = null } = {}) {
+function openWithProgram(program, url, { log }, { paste = false, file = null, keepAlive = false } = {}) {
   const phone = parsePhone(url);
   if (!phone) return { ok: false, message: 'Enlace de WhatsApp no válido' };
   const fallback = (message) => {
@@ -209,7 +209,8 @@ function openWithProgram(program, url, { log }, { paste = false, file = null } =
   }
   try {
     // --pegar: WhatsApp Guajardo pega solo el comprobante que quedó en el portapapeles (otros programas lo ignoran)
-    const args = [`--telefono=${phone}`, ...(paste ? ['--pegar'] : []), ...(paste && file ? [`--archivo=${file}`] : [])];
+    // --segundo-plano=si|no: WhatsApp Guajardo lo aplica (y lo recuerda); otros programas lo ignoran
+    const args = [`--telefono=${phone}`, `--segundo-plano=${keepAlive ? 'si' : 'no'}`, ...(paste ? ['--pegar'] : []), ...(paste && file ? [`--archivo=${file}`] : [])];
     const child = spawn(program, args, { detached: true, stdio: 'ignore', shell: false });
     child.once('error', (error) => fallback(error.message));
     child.unref();
@@ -296,8 +297,27 @@ async function pasteWhenReady(log, file) {
 }
 
 
+// Precarga: abre WhatsApp Guajardo oculto (con su ícono junto al reloj) para que ya esté listo cuando haga falta.
+// Si el programa ya estaba abierto no toca su ventana. Devuelve true si lo pudo lanzar.
+function preloadProgram(program, { log }) {
+  if (typeof program !== 'string' || path.extname(program).toLowerCase() !== '.exe' || !fs.existsSync(program)) {
+    log('WhatsApp: no se precargó, no se encuentra el programa elegido');
+    return false;
+  }
+  try {
+    const child = spawn(program, ['--oculto', '--segundo-plano=si'], { detached: true, stdio: 'ignore', shell: false });
+    child.once('error', (error) => log(`WhatsApp: no se pudo precargar (${error.message})`));
+    child.unref();
+    log(`WhatsApp: precarga de ${path.basename(program)} (oculto)`);
+    return true;
+  } catch (error) {
+    log(`WhatsApp: no se pudo precargar (${error.message})`);
+    return false;
+  }
+}
+
 function close() {
   if (isOpen()) win.destroy();
 }
 
-module.exports = { open, openWithProgram, close, owns, parsePhone };
+module.exports = { open, openWithProgram, preloadProgram, close, owns, parsePhone };
