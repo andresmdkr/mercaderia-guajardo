@@ -1,8 +1,9 @@
 // Arma el enlace de WhatsApp (https://wa.me/54911...) a partir de un teléfono argentino escrito como sea:
-// "11 5555-1234", "011 15 5555-1234", "+54 9 351 555-9012", "(0351) 155-559012"...
+// "264 458-1305", "458 1305" (sin característica: se asume San Juan), "0264 15 458-1305", "+54 9 264 458-1305", "11 5555-1234"...
 // Devuelve null si no parece un celular argentino (ej. un teléfono fijo o un número incompleto).
 
 const AREA_LENGTHS = [2, 3, 4]; // código de área: 11 (Buenos Aires), 351, 2966...
+const DEFAULT_AREA = '264'; // San Juan: si el número se escribe sin característica, se usa esta
 
 // Devuelve los 10 dígitos "área + número" o null.
 function nationalNumber(digits) {
@@ -10,6 +11,9 @@ function nationalNumber(digits) {
   if (number.startsWith('54')) number = number.slice(2).replace(/^9/, ''); // ya venía con el país (+54 9 ...)
   number = number.replace(/^0+/, ''); // el 0 de larga distancia
   if (number.length === 10) return number;
+  // Sin característica (lo habitual en San Juan): "458 1305" o "15 458 1305" → 264 458 1305
+  if (number.length === 7) return DEFAULT_AREA + number;
+  if (number.length === 9 && number.startsWith('15')) return DEFAULT_AREA + number.slice(2);
   if (number.length === 12) {
     // área + "15" + número: se saca el 15 (es lo que se marca desde un celular, no sirve para WhatsApp)
     for (const area of AREA_LENGTHS) {

@@ -81,7 +81,7 @@ export default function CustomerForm({ customer, onClose, onSubmit, onToggleActi
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
           <Grid size={12}>{field('name', 'Nombre', { autoFocus: true })}</Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            {field('phone', 'Teléfono', { onBlur: () => checkPhone(values.phone) })}
+            {field('phone', 'Teléfono', { onBlur: () => checkPhone(values.phone), helperText: errors.phone ?? 'Ej.: 264 458-1305 (para WhatsApp)' })}
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>{field('email', 'Email', { type: 'email' })}</Grid>
           {duplicate && (

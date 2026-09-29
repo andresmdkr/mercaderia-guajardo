@@ -11,43 +11,71 @@ const DEMO_USER = { username: 'demo', name: 'Usuario de prueba', password: 'demo
 const DAYS_OF_HISTORY = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const CATEGORIES = ['Almacén', 'Bebidas', 'Limpieza', 'Lácteos', 'Golosinas'];
+const CATEGORIES = ['Almacén', 'Bebidas', 'Limpieza', 'Lácteos', 'Golosinas', 'Galletitas'];
 
+// Productos conocidos en San Juan y en toda la Argentina, con su marca (son solo de ejemplo; precios aproximados).
 // [código, nombre, categoría, costo, venta, stock mínimo]
 const PRODUCTS = [
-  ['ALM001', 'Yerba mate 1kg', 'Almacén', 3200, 4500, 5],
-  ['ALM002', 'Fideos tirabuzón 500g', 'Almacén', 900, 1400, 10],
-  ['ALM003', 'Arroz largo fino 1kg', 'Almacén', 1100, 1700, 8],
-  ['ALM004', 'Aceite girasol 900ml', 'Almacén', 2100, 3000, 6],
-  ['ALM005', 'Azúcar 1kg', 'Almacén', 1000, 1500, 8],
-  ['BEB001', 'Gaseosa cola 2,25L', 'Bebidas', 2200, 3200, 6],
-  ['BEB002', 'Agua mineral 1,5L', 'Bebidas', 800, 1300, 12],
-  ['BEB003', 'Cerveza lata 473ml', 'Bebidas', 1300, 1900, 12],
-  ['LIM001', 'Lavandina 1L', 'Limpieza', 700, 1100, 6],
-  ['LIM002', 'Detergente 750ml', 'Limpieza', 1200, 1800, 6],
-  ['LIM003', 'Papel higiénico x4', 'Limpieza', 1500, 2300, 8],
-  ['LAC001', 'Leche entera 1L', 'Lácteos', 1000, 1500, 10],
-  ['LAC002', 'Yogur bebible 1L', 'Lácteos', 1400, 2100, 6],
-  ['GOL001', 'Alfajor triple', 'Golosinas', 600, 1000, 15],
-  ['GOL002', 'Chocolate 100g', 'Golosinas', 1300, 2000, 8],
+  ['ALM001', 'Yerba mate Taragüí 1kg', 'Almacén', 5200, 7200, 6],
+  ['ALM002', 'Yerba mate Playadito 1kg', 'Almacén', 5000, 6900, 6],
+  ['ALM003', 'Fideos Matarazzo tirabuzón 500g', 'Almacén', 1100, 1650, 10],
+  ['ALM004', 'Fideos Lucchetti spaghetti 500g', 'Almacén', 1050, 1600, 10],
+  ['ALM005', 'Arroz Gallo Oro 1kg', 'Almacén', 1500, 2200, 8],
+  ['ALM006', 'Aceite Cocinero girasol 900ml', 'Almacén', 2600, 3700, 6],
+  ['ALM007', 'Azúcar Ledesma 1kg', 'Almacén', 1200, 1800, 8],
+  ['ALM008', 'Harina Pureza 000 1kg', 'Almacén', 800, 1250, 8],
+  ['ALM009', 'Sal Celusal fina 500g', 'Almacén', 500, 800, 6],
+  ['ALM010', 'Puré de tomate Arcor 520g', 'Almacén', 700, 1100, 8],
+  ['ALM011', 'Mate cocido Taragüí x25', 'Almacén', 1000, 1500, 6],
+  ['ALM012', 'Café La Morenita 250g', 'Almacén', 3300, 4700, 4],
+  ['BEB001', 'Coca-Cola 2,25L', 'Bebidas', 2600, 3700, 8],
+  ['BEB002', 'Sprite 2,25L', 'Bebidas', 2400, 3400, 6],
+  ['BEB003', 'Fanta naranja 2,25L', 'Bebidas', 2400, 3400, 6],
+  ['BEB004', 'Agua Villavicencio 1,5L', 'Bebidas', 900, 1400, 12],
+  ['BEB005', 'Cerveza Quilmes lata 473ml', 'Bebidas', 1500, 2200, 12],
+  ['BEB006', 'Cerveza Andes Origen lata 473ml', 'Bebidas', 1500, 2200, 12],
+  ['BEB007', 'Vino Termidor 1L', 'Bebidas', 2000, 2900, 6],
+  ['BEB008', 'Fernet Branca 750ml', 'Bebidas', 11000, 15500, 4],
+  ['BEB009', 'Jugo Cepita naranja 1L', 'Bebidas', 1300, 1900, 6],
+  ['LIM001', 'Lavandina Ayudín 1L', 'Limpieza', 800, 1250, 6],
+  ['LIM002', 'Detergente Magistral limón 750ml', 'Limpieza', 1600, 2400, 6],
+  ['LIM003', 'Papel higiénico Higienol x4', 'Limpieza', 1800, 2700, 8],
+  ['LIM004', 'Jabón en polvo Skip 800g', 'Limpieza', 3600, 5200, 4],
+  ['LIM005', 'Suavizante Vívere 900ml', 'Limpieza', 2200, 3200, 4],
+  ['LAC001', 'Leche La Serenísima entera 1L', 'Lácteos', 1200, 1750, 10],
+  ['LAC002', 'Yogur Ser bebible frutilla 1L', 'Lácteos', 1600, 2300, 6],
+  ['LAC003', 'Manteca La Serenísima 200g', 'Lácteos', 2100, 3000, 4],
+  ['LAC004', 'Queso crema Casancrem 300g', 'Lácteos', 2400, 3400, 4],
+  ['LAC005', 'Dulce de leche La Serenísima 400g', 'Lácteos', 2200, 3200, 4],
+  ['GOL001', 'Alfajor Jorgito triple', 'Golosinas', 700, 1100, 15],
+  ['GOL002', 'Alfajor Guaymallén', 'Golosinas', 400, 700, 20],
+  ['GOL003', 'Chocolate Milka Oreo 100g', 'Golosinas', 1900, 2800, 8],
+  ['GOL004', 'Bon o Bon', 'Golosinas', 300, 500, 20],
+  ['GAL001', 'Galletitas Oreo 118g', 'Galletitas', 1100, 1650, 10],
+  ['GAL002', 'Galletitas Criollitas 300g', 'Galletitas', 1300, 1900, 8],
+  ['GAL003', 'Galletitas Terrabusi Variedad 400g', 'Galletitas', 1900, 2800, 6],
 ];
 
 // Stock inicial por código. Varios quedan en o bajo el mínimo, para probar "stock bajo".
 const INITIAL_STOCK = {
-  ALM001: 3, ALM002: 24, ALM003: 15, ALM004: 9, ALM005: 20,
-  BEB001: 12, BEB002: 12, BEB003: 30,
-  LIM001: 10, LIM002: 8, LIM003: 5,
-  LAC001: 4, LAC002: 10,
-  GOL001: 40, GOL002: 14,
+  ALM001: 4, ALM002: 12, ALM003: 24, ALM004: 20, ALM005: 15, ALM006: 9, ALM007: 20, ALM008: 16, ALM009: 12, ALM010: 14, ALM011: 10, ALM012: 6,
+  BEB001: 16, BEB002: 12, BEB003: 10, BEB004: 24, BEB005: 30, BEB006: 30, BEB007: 12, BEB008: 5, BEB009: 10,
+  LIM001: 10, LIM002: 8, LIM003: 12, LIM004: 5, LIM005: 6,
+  LAC001: 14, LAC002: 10, LAC003: 6, LAC004: 6, LAC005: 8,
+  GOL001: 40, GOL002: 50, GOL003: 14, GOL004: 60,
+  GAL001: 18, GAL002: 12, GAL003: 10,
 };
 
+// Clientes de San Juan (todo inventado). El primero es el de la demostración y el más frecuente en las ventas.
 // [nombre, teléfono, email, dirección, notas]
 const CUSTOMERS = [
-  ['María Pérez', '11 5555-1234', 'maria.perez@example.com', 'Av. Rivadavia 1234', 'Paga los viernes'],
-  ['Juan Gómez', '11 4444-5678', null, 'San Martín 456', null],
-  ['Lucía Fernández', '351 555-9012', 'lucia.f@example.com', null, 'Prefiere transferencia'],
-  ['Carlos Rodríguez', '11 6666-3456', null, 'Belgrano 789', null],
-  ['Ana Martínez', null, 'ana.martinez@example.com', null, null],
+  ['Andrés Márquez', '264 458-1305', 'andres.marquez@example.com', 'Av. Libertador 1450 Oeste, Capital', 'Cliente frecuente'],
+  ['Laura Quiroga', '264 512-3344', null, 'Calle Laprida 812 Este, Capital', 'Paga los viernes'],
+  ['Marcelo Ortiz', '264 601-9087', 'marcelo.ortiz@example.com', 'Av. Ignacio de la Roza 245 Oeste, Capital', null],
+  ['Carolina Sarmiento', '264 433-7721', null, 'Calle Mendoza 1120 Sur, Rivadavia', 'Prefiere transferencia'],
+  ['Facundo Videla', '264 579-1102', null, 'Calle Rawson 330, Chimbas', null],
+  ['Silvina Castro', '264 410-6653', 'silvina.castro@example.com', 'Barrio Rawson, manzana C casa 12, Rawson', null],
+  ['Roberto Molina', '264 655-2038', null, 'Ruta 40 km 3, Pocito', 'Retira por el local'],
 ];
 
 // Las fechas van a SQL a mano en el mismo formato en que las guarda SQLite (ver reportController).
@@ -137,7 +165,8 @@ async function loadSales({ userId, now = new Date() }) {
     try {
       const sale = await saleController.create({
         items: [...lines].map(([productId, quantity]) => ({ productId, quantity })),
-        customerId: random() < 0.4 ? pick(random, customers).id : undefined,
+        // El primer cliente (Andrés Márquez) compra más seguido que los demás
+        customerId: random() < 0.4 ? (random() < 0.35 ? customers[0] : pick(random, customers)).id : undefined,
         paymentMethod: pick(random, methods),
         discount,
         userId,
@@ -191,8 +220,13 @@ async function populateDemo({ now = new Date() } = {}) {
     }
   }
 
-  const [settings] = await BusinessSettings.findOrCreate({ where: { id: 1 }, defaults: { id: 1, name: 'Comercio de ejemplo' } });
-  await settings.update({ name: 'Comercio de ejemplo' });
+  const [settings] = await BusinessSettings.findOrCreate({ where: { id: 1 }, defaults: { id: 1, name: 'Almacén El Zonda' } });
+  await settings.update({
+    name: 'Almacén El Zonda',
+    address: 'Av. Libertador 1234 Oeste, San Juan',
+    phone: '264 422-1234',
+    email: 'contacto@elzonda.example.com',
+  });
 
   return { ...catalog, sales, user: DEMO_USER.username };
 }

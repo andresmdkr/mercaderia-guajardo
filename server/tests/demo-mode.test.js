@@ -44,6 +44,29 @@ describe('modo de prueba', () => {
     assert.ok((low.items ?? low).length >= 2, 'hay productos con stock bajo');
   });
 
+  it('los datos de ejemplo son de San Juan: comercio, clientes con 264 y productos con marca', async () => {
+    await api.post('/api/auth/login', { username: 'demo', password: 'demo1234' });
+    const business = (await api.get('/api/settings/business')).data;
+    assert.match(business.address, /San Juan/);
+    assert.match(business.phone, /^264 /);
+
+    const customers = (await api.get('/api/customers?limit=100')).data.items;
+    const andres = customers.find((c) => c.name === 'Andrés Márquez');
+    assert.equal(andres?.phone, '264 458-1305', 'el cliente de la demostración');
+    assert.ok(customers.every((c) => !c.phone || c.phone.startsWith('264 ')), 'todos con característica de San Juan');
+
+    const names = (await api.get('/api/products?limit=100')).data.items.map((p) => p.name);
+    for (const brand of ['Taragüí', 'Playadito', 'Coca-Cola', 'Villavicencio', 'Guaymallén', 'La Serenísima']) {
+      assert.ok(names.some((name) => name.includes(brand)), `falta un producto ${brand}`);
+    }
+
+    // Andrés Márquez es el cliente más frecuente de las ventas de ejemplo
+    const sales = (await api.get('/api/sales?limit=100')).data.items.filter((s) => s.customer);
+    const counts = sales.reduce((acc, s) => ({ ...acc, [s.customer.name]: (acc[s.customer.name] ?? 0) + 1 }), {});
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    assert.equal(top, 'Andrés Márquez');
+  });
+
   it('los datos cumplen las reglas de siempre: el stock cierra con los movimientos', async () => {
     const rows = await server.db.all(
       `SELECT p.code, p.stock, COALESCE(SUM(m.quantity), 0) AS moved

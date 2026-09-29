@@ -12,7 +12,7 @@ export default function ReceiptPhoneDialog({ defaultPhone = '', onCancel, onSend
     event.preventDefault();
     const url = whatsappUrl(phone);
     if (!url) {
-      setError('Ingresá un celular argentino con característica, por ejemplo 11 5555-1234');
+      setError('Ingresá un celular de 10 dígitos con la característica, por ejemplo 264 458-1305');
       return;
     }
     onSend(url);
@@ -31,7 +31,7 @@ export default function ReceiptPhoneDialog({ defaultPhone = '', onCancel, onSend
             setError(null);
           }}
           error={Boolean(error)}
-          helperText={error ?? 'Con la característica, sin el 15. Ejemplo: 11 5555-1234'}
+          helperText={error ?? 'Ejemplo: 264 458-1305. Sin la característica se usa 264 (San Juan).'}
           fullWidth
           autoFocus
           size="small"
