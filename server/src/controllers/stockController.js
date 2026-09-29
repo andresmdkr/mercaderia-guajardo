@@ -59,6 +59,32 @@ async function applyMovement({ productId, type, quantity, newStock, reason, user
   );
 }
 
+/**
+ * Un mismo tipo de movimiento para varios productos, todo o nada (una sola transacción).
+ * Cada renglón pasa por applyMovement, así que sigue habiendo un movimiento por producto.
+ * En un ajuste, los productos cuyo stock ya coincide con lo contado se saltean (no son error:
+ * al contar un estante es lo normal). Devuelve los movimientos creados y la cantidad salteada.
+ */
+async function applyBulk({ type, reason, items, userId }) {
+  return sequelize.transaction(async (transaction) => {
+    const movements = [];
+    let skipped = 0;
+    // En orden de id: dos lotes simultáneos toman los productos en el mismo orden.
+    for (const item of [...items].sort((a, b) => a.productId - b.productId)) {
+      if (type === 'adjustment') {
+        const product = await Product.findByPk(item.productId, { transaction });
+        if (product && product.active && product.stock === item.newStock) {
+          skipped += 1;
+          continue;
+        }
+      }
+      movements.push(await applyMovement({ ...item, type, reason, userId }, { transaction }));
+    }
+    if (movements.length === 0) throw new AppError('Ningún producto cambia de stock: todos ya tienen esa cantidad');
+    return { movements, skipped };
+  });
+}
+
 function getById(id) {
   return StockMovement.findByPk(id, { include: includeRelations });
 }
@@ -84,4 +110,4 @@ async function list({ page, limit, productId, type, from, to }) {
   return { items: rows, total: count, page, pages: Math.ceil(count / limit) };
 }
 
-module.exports = { applyMovement, getById, list };
+module.exports = { applyMovement, applyBulk, getById, list };

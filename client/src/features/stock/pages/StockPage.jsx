@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Alert, Box, Button, CircularProgress, MenuItem, Snackbar, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAddOutlined';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
 import SwapVertIcon from '@mui/icons-material/SwapVertOutlined';
 import ClearFiltersButton from '../../../components/ClearFiltersButton';
 import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import ProductPicker from '../../products/components/ProductPicker';
-import { createMovement } from '../api/stockApi';
+import { createBulkMovement, createMovement } from '../api/stockApi';
+import BulkMovementDialog from '../components/BulkMovementDialog';
 import MovementForm from '../components/MovementForm';
 import MovementsTable from '../components/MovementsTable';
 import useMovements from '../hooks/useMovements';
@@ -18,12 +20,22 @@ const dateFieldProps = { size: 'small', type: 'date', slotProps: { inputLabel: {
 export default function StockPage() {
   const movements = useMovements();
   const [formOpen, setFormOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [message, setMessage] = useState(null);
 
   const handleSubmit = async (values) => {
     await createMovement(values);
     setMessage({ severity: 'success', text: 'Movimiento registrado' });
     setFormOpen(false);
+    movements.reload();
+  };
+
+  const handleBulkSubmit = async (values) => {
+    const { count, skipped } = await createBulkMovement(values);
+    const skippedText = skipped ? ` (${skipped} sin cambios)` : '';
+    const text = `${count} ${count === 1 ? 'movimiento registrado' : 'movimientos registrados'}${skippedText}`;
+    setMessage({ severity: 'success', text });
+    setBulkOpen(false);
     movements.reload();
   };
 
@@ -55,6 +67,9 @@ export default function StockPage() {
         actions={
           <>
             {movements.loading && <CircularProgress size={22} />}
+            <Button variant="outlined" startIcon={<PlaylistAddIcon />} onClick={() => setBulkOpen(true)}>
+              Movimiento múltiple
+            </Button>
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => setFormOpen(true)}>
               Nuevo movimiento
             </Button>
@@ -117,6 +132,8 @@ export default function StockPage() {
       />
 
       {formOpen && <MovementForm onClose={() => setFormOpen(false)} onSubmit={handleSubmit} />}
+
+      {bulkOpen && <BulkMovementDialog onClose={() => setBulkOpen(false)} onSubmit={handleBulkSubmit} />}
 
       <Snackbar open={Boolean(message)} autoHideDuration={3000} onClose={() => setMessage(null)}>
         {message ? <Alert severity={message.severity}>{message.text}</Alert> : undefined}
