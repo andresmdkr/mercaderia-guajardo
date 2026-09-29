@@ -6,7 +6,7 @@ const AppError = require('../utils/AppError');
 function list() {
   return Category.findAll({
     attributes: {
-      include: [[literal('(SELECT COUNT(*)::int FROM products WHERE products.category_id = "Category"."id")'), 'productCount']],
+      include: [[literal('(SELECT COUNT(*) FROM products WHERE products.category_id = "Category"."id")'), 'productCount']],
     },
     order: [[fn('LOWER', col('name')), 'ASC']],
   });

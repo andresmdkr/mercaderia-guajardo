@@ -1,18 +1,15 @@
 require('dotenv').config();
-const app = require('./src/app');
-const { sequelize } = require('./src/db');
+const { DB_FILE } = require('./src/db');
+const { startServer } = require('./src/server');
 
 const PORT = process.env.PORT || 3001;
 
-async function start() {
-  try {
-    await sequelize.authenticate();
-    console.log('Conectado a PostgreSQL');
-    app.listen(PORT, () => console.log(`Server escuchando en http://localhost:${PORT}`));
-  } catch (error) {
-    console.error('No se pudo conectar a la base:', error.message);
+startServer({ port: PORT })
+  .then(() => {
+    console.log(`Base de datos: ${DB_FILE}`);
+    console.log(`Server escuchando en http://localhost:${PORT}`);
+  })
+  .catch((error) => {
+    console.error('No se pudo iniciar el servidor:', error.message);
     process.exit(1);
-  }
-}
-
-start();
+  });

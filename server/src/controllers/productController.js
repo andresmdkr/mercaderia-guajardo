@@ -10,7 +10,8 @@ async function list({ page, limit, search, categoryId, lowStock, active }) {
 
   if (search) {
     conditions.push({
-      [Op.or]: [{ name: { [Op.iLike]: `%${search}%` } }, { code: { [Op.iLike]: `%${search}%` } }],
+      // en SQLite LIKE ignora mayúsculas (solo letras sin tilde)
+      [Op.or]: [{ name: { [Op.like]: `%${search}%` } }, { code: { [Op.like]: `%${search}%` } }],
     });
   }
   if (categoryId) conditions.push({ categoryId });

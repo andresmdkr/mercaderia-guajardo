@@ -1,4 +1,4 @@
-const { Op, col, fn, where } = require('sequelize');
+const { Op, literal, where } = require('sequelize');
 const { Customer } = require('../db');
 const AppError = require('../utils/AppError');
 
@@ -6,7 +6,7 @@ async function list({ page, limit, search, active }) {
   const conditions = [];
 
   if (search) {
-    const like = { [Op.iLike]: `%${search}%` };
+    const like = { [Op.like]: `%${search}%` }; // en SQLite LIKE ignora mayúsculas (solo letras sin tilde)
     conditions.push({ [Op.or]: [{ name: like }, { phone: like }, { email: like }] });
   }
   if (active !== undefined) conditions.push({ active });
@@ -41,10 +41,14 @@ async function setActive(id, active) {
   return customer.update({ active });
 }
 
+// El teléfono sin espacios, guiones, puntos, paréntesis ni "+" (SQLite no tiene expresiones regulares).
+const PHONE_DIGITS_SQL = ['\' \'', '\'-\'', '\'.\'', '\'(\'', '\')\'', '\'+\'']
+  .reduce((expression, character) => `REPLACE(${expression}, ${character}, '')`, 'phone');
+
 // Busca otro cliente con el mismo teléfono comparando solo los dígitos
 // ("11 5555-1234" y "1155551234" son el mismo número). Es solo un aviso, no bloquea nada.
 async function findByPhone(digits, excludeId) {
-  const conditions = [where(fn('regexp_replace', col('phone'), '\\D', '', 'g'), digits)];
+  const conditions = [where(literal(PHONE_DIGITS_SQL), digits)];
   if (excludeId) conditions.push({ id: { [Op.ne]: excludeId } });
 
   return Customer.findOne({ where: { [Op.and]: conditions }, attributes: ['id', 'name'] });

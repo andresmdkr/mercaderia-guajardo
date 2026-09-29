@@ -1,17 +1,19 @@
 const { UniqueConstraintError, ValidationError } = require('sequelize');
 
-// Mensajes para violaciones de unicidad, según la restricción de Postgres que chocó.
-const UNIQUE_MESSAGES = {
-  products_code_key: 'Ya existe un producto con ese código',
-  users_username_key: 'Ya existe un usuario con ese nombre',
-  categories_name_lower_unique: 'Ya existe una categoría con ese nombre',
-};
+// Mensajes para violaciones de unicidad. SQLite informa la columna o el índice que chocó
+// ("UNIQUE constraint failed: products.code"), y se busca ese texto en el mensaje.
+const UNIQUE_MESSAGES = [
+  ['products.code', 'Ya existe un producto con ese código'],
+  ['users.username', 'Ya existe un usuario con ese nombre'],
+  ['categories_name_lower_unique', 'Ya existe una categoría con ese nombre'],
+];
 
 // eslint-disable-next-line no-unused-vars
 function errorHandler(error, req, res, next) {
   if (error instanceof UniqueConstraintError) {
-    const message = UNIQUE_MESSAGES[error.parent?.constraint] ?? 'Ya existe un registro con esos datos';
-    return res.status(409).json({ message });
+    const text = `${error.parent?.message ?? ''} ${error.message}`;
+    const found = UNIQUE_MESSAGES.find(([fragment]) => text.includes(fragment));
+    return res.status(409).json({ message: found ? found[1] : 'Ya existe un registro con esos datos' });
   }
   if (error instanceof ValidationError) {
     return res.status(400).json({ message: error.message });

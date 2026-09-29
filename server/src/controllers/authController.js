@@ -27,12 +27,11 @@ async function needsSetup() {
   return (await User.count()) === 0;
 }
 
-// Crea el primer usuario, y solo si todavía no existe ninguno. La tabla se bloquea durante la
-// operación para que dos pedidos simultáneos no puedan crear dos administradores.
+// Crea el primer usuario, y solo si todavía no existe ninguno. La transacción toma el candado de
+// escritura desde el principio, así que dos pedidos simultáneos no pueden crear dos administradores.
 async function setupFirstUser(data) {
   const passwordHash = await bcrypt.hash(data.password, 10);
   return sequelize.transaction(async (transaction) => {
-    await sequelize.query('LOCK TABLE users IN EXCLUSIVE MODE', { transaction });
     if ((await User.count({ transaction })) > 0) throw new AppError('La aplicación ya fue configurada', 409);
     return User.create({ username: data.username, name: data.name, passwordHash }, { transaction });
   });

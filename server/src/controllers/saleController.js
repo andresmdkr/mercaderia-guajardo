@@ -71,7 +71,7 @@ async function create({ items, customerId, paymentMethod, discount, notes, userI
     // 1) Leer (y bloquear) cada producto: de acá salen el precio, el costo y el nombre.
     const lines = [];
     for (const { productId, quantity } of ordered) {
-      const product = await Product.findByPk(productId, { transaction, lock: transaction.LOCK.UPDATE });
+      const product = await Product.findByPk(productId, { transaction });
       if (!product) throw new AppError(`El producto ${productId} no existe`);
       if (!product.active) throw new AppError(`"${product.name}" está dado de baja`, 409);
 
@@ -136,7 +136,7 @@ async function create({ items, customerId, paymentMethod, discount, notes, userI
 // Anula una venta: devuelve el stock de todos los ítems. Una venta anulada no se puede volver a anular.
 async function voidSale(id, { reason, userId }) {
   await sequelize.transaction(async (transaction) => {
-    const sale = await Sale.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+    const sale = await Sale.findByPk(id, { transaction });
     if (!sale) throw new AppError('Venta no encontrada', 404);
     if (sale.status === 'voided') throw new AppError('La venta ya está anulada', 409);
 

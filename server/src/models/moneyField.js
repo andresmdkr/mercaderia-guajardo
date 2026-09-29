@@ -1,15 +1,18 @@
 const { DataTypes } = require('sequelize');
 
-// Columna de dinero. Postgres devuelve DECIMAL como string; el getter lo entrega como número.
-// Dinero siempre DECIMAL(12,2), nunca float (los cálculos se hacen en centavos, ver utils/money.js).
+// Columna de dinero. SQLite no tiene decimales exactos, así que el importe se guarda como un ENTERO
+// en centavos (12,34 pesos = 1234) y el modelo lo entrega y recibe en pesos. Nunca float en la base.
 function moneyField(field, { allowNull = false } = {}) {
   return {
-    type: DataTypes.DECIMAL(12, 2),
+    type: DataTypes.INTEGER,
     allowNull,
     defaultValue: allowNull ? null : 0,
     get() {
-      const raw = this.getDataValue(field);
-      return raw === null ? null : Number(raw);
+      const cents = this.getDataValue(field);
+      return cents === null || cents === undefined ? null : cents / 100;
+    },
+    set(pesos) {
+      this.setDataValue(field, pesos === null || pesos === undefined ? null : Math.round(Number(pesos) * 100));
     },
   };
 }

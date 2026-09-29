@@ -2,6 +2,7 @@
 // Carga datos de ejemplo para probar la app. Solo desarrollo; se puede correr varias veces.
 const { sequelize, Category, Customer, Product, StockMovement, User } = require('../db');
 const { applyMovement } = require('../controllers/stockController');
+const { migrateUp } = require('../utils/migrator');
 
 if (process.env.NODE_ENV === 'production') {
   console.error('El seed no se puede correr en producción');
@@ -48,6 +49,7 @@ const CUSTOMERS = [
 ];
 
 async function main() {
+  await migrateUp(sequelize); // con una base nueva, primero se crea el esquema
   const categoryIds = {};
   for (const name of CATEGORIES) {
     const [category] = await Category.findOrCreate({ where: { name }, defaults: { name } });

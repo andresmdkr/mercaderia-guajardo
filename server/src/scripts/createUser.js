@@ -3,6 +3,7 @@
 const readline = require('readline');
 const { sequelize } = require('../db');
 const authController = require('../controllers/authController');
+const { migrateUp } = require('../utils/migrator');
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 let muted = false;
@@ -25,6 +26,7 @@ function ask(question, { hidden = false } = {}) {
 }
 
 async function main() {
+  await migrateUp(sequelize); // con una base nueva, primero se crea el esquema
   const username = await ask('Usuario: ');
   const name = await ask('Nombre: ');
   const password = await ask('Contraseña (mín. 8 caracteres): ', { hidden: true });

@@ -36,7 +36,7 @@ async function applyMovement({ productId, type, quantity, newStock, reason, user
     );
   }
 
-  const product = await Product.findByPk(productId, { transaction, lock: transaction.LOCK.UPDATE });
+  const product = await Product.findByPk(productId, { transaction });
   if (!product) throw new AppError('Producto no encontrado', 404);
   // Anular una venta tiene que poder devolver stock aunque el producto ya esté de baja.
   if (!product.active && type !== 'sale_void') {

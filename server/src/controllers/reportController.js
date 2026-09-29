@@ -1,6 +1,13 @@
 const { Op, QueryTypes, col, literal, where } = require('sequelize');
 const { sequelize, Category, Product } = require('../db');
 
+// Los importes se guardan en centavos enteros: las sumas de SQL también llegan en centavos.
+const money = (cents) => Math.round(Number(cents)) / 100;
+
+// SQLite guarda las fechas como texto en UTC ("2026-09-29 03:00:00.000 +00:00") y las compara como texto.
+// En las consultas SQL a mano hay que pasar las fechas en ese mismo formato (Sequelize las mandaría en hora local).
+const dbDate = (date) => date.toISOString().replace('T', ' ').replace('Z', ' +00:00');
+
 // Solo cuentan las ventas completadas: las anuladas no suman a ningún reporte.
 // `from` / `to` son opcionales (sin ellas, se cuenta todo el historial).
 function periodFilter(from, to) {
@@ -8,16 +15,14 @@ function periodFilter(from, to) {
   const replacements = {};
   if (from) {
     conditions.push('s.created_at >= :from');
-    replacements.from = from;
+    replacements.from = dbDate(from);
   }
   if (to) {
     conditions.push('s.created_at <= :to');
-    replacements.to = to;
+    replacements.to = dbDate(to);
   }
   return { sql: conditions.join(' AND '), replacements };
 }
-
-const money = (value) => Math.round(Number(value) * 100) / 100;
 
 async function summary({ from, to }) {
   // Ventas completadas y anuladas del período (las anuladas solo se cuentan, no suman dinero).
@@ -25,17 +30,17 @@ async function summary({ from, to }) {
   const replacements = {};
   if (from) {
     dateConditions.push('created_at >= :from');
-    replacements.from = from;
+    replacements.from = dbDate(from);
   }
   if (to) {
     dateConditions.push('created_at <= :to');
-    replacements.to = to;
+    replacements.to = dbDate(to);
   }
   const dateSql = dateConditions.length ? `WHERE ${dateConditions.join(' AND ')}` : '';
 
   const [totals] = await sequelize.query(
-    `SELECT COUNT(*) FILTER (WHERE status = 'completed')::int AS "salesCount",
-            COUNT(*) FILTER (WHERE status = 'voided')::int AS "voidedCount",
+    `SELECT COUNT(*) FILTER (WHERE status = 'completed') AS salesCount,
+            COUNT(*) FILTER (WHERE status = 'voided') AS voidedCount,
             COALESCE(SUM(total) FILTER (WHERE status = 'completed'), 0) AS revenue,
             COALESCE(SUM(discount_amount) FILTER (WHERE status = 'completed'), 0) AS discounts
      FROM sales ${dateSql}`,
@@ -50,17 +55,18 @@ async function summary({ from, to }) {
     { replacements: completed.replacements, type: QueryTypes.SELECT }
   );
 
-  const revenue = money(totals.revenue);
-  const cost = money(costRow.cost);
+  const salesCount = Number(totals.salesCount);
+  const revenueCents = Number(totals.revenue);
+  const costCents = Number(costRow.cost);
   return {
-    salesCount: totals.salesCount,
-    voidedCount: totals.voidedCount,
-    revenue,
+    salesCount,
+    voidedCount: Number(totals.voidedCount),
+    revenue: money(revenueCents),
     discounts: money(totals.discounts),
-    cost,
+    cost: money(costCents),
     // Ganancia estimada = lo cobrado (ya con descuentos) menos el costo que tenían los productos al vender.
-    profit: money(revenue - cost),
-    averageTicket: totals.salesCount > 0 ? money(revenue / totals.salesCount) : 0,
+    profit: money(revenueCents - costCents),
+    averageTicket: salesCount > 0 ? money(revenueCents / salesCount) : 0,
   };
 }
 
@@ -73,8 +79,8 @@ async function topProducts({ from, to, limit, sort }) {
   const secondary = orderColumn === 'quantity' ? 'revenue' : 'quantity';
 
   const rows = await sequelize.query(
-    `SELECT si.product_id AS "productId", p.code, p.name,
-            SUM(si.quantity)::int AS quantity,
+    `SELECT si.product_id AS productId, p.code AS code, p.name AS name,
+            SUM(si.quantity) AS quantity,
             SUM(si.line_total) AS revenue
      FROM sale_items si
      JOIN sales s ON s.id = si.sale_id
@@ -86,7 +92,13 @@ async function topProducts({ from, to, limit, sort }) {
     { replacements: { ...replacements, limit }, type: QueryTypes.SELECT }
   );
 
-  return rows.map((row) => ({ ...row, revenue: money(row.revenue) }));
+  return rows.map((row) => ({
+    productId: row.productId,
+    code: row.code,
+    name: row.name,
+    quantity: Number(row.quantity),
+    revenue: money(row.revenue),
+  }));
 }
 
 // Productos activos con stock igual o menor al mínimo; primero los más urgentes (los que más faltan).

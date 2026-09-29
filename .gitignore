@@ -6,3 +6,4 @@ dist/
 
 # Backups de la base (son datos del negocio: no se suben al repositorio)
 server/backups/
+server/data/
