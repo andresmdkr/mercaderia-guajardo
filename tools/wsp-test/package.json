@@ -1,6 +1,6 @@
 {
   "name": "whatsapp-prueba",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Prueba: WhatsApp Web dentro de Electron 22 (32 bits), para ver si funciona en la PC del negocio",
   "main": "main.js",
   "private": true,

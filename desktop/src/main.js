@@ -122,8 +122,13 @@ function handle(channel, action) {
   });
 }
 
-// WhatsApp: 'integrated' = ventana propia dentro de la aplicación (por defecto); 'browser' = navegador del sistema.
-const whatsappMode = () => (appServer.readConfig(appServer.getState().dataDir).whatsapp === 'browser' ? 'browser' : 'integrated');
+// WhatsApp: 'integrated' = ventana propia dentro de la aplicación (por defecto); 'browser' = navegador del sistema;
+// 'program' = otro programa elegido en Configuración (config.json → whatsappProgram).
+const whatsappSettings = () => {
+  const config = appServer.readConfig(appServer.getState().dataDir);
+  const mode = ['browser', 'program'].includes(config.whatsapp) ? config.whatsapp : 'integrated';
+  return { mode, program: typeof config.whatsappProgram === 'string' ? config.whatsappProgram : null };
+};
 
 function relaunch() {
   app.relaunch();
@@ -158,18 +163,33 @@ function registerIpc() {
 
   handle('desktop:open-whatsapp', (url) => {
     if (!whatsapp.parsePhone(url)) return { ok: false, message: 'Enlace de WhatsApp no válido' };
-    if (whatsappMode() === 'browser') {
+    const { mode, program } = whatsappSettings();
+    if (mode === 'browser') {
       shell.openExternal(url);
       return { ok: true };
     }
+    if (mode === 'program') return whatsapp.openWithProgram(program, url, { log });
     return whatsapp.open(url, { icon: ICON, log });
   });
-  handle('desktop:get-whatsapp-mode', () => whatsappMode());
+  handle('desktop:get-whatsapp-settings', () => whatsappSettings());
   handle('desktop:set-whatsapp-mode', (mode) => {
-    if (mode !== 'integrated' && mode !== 'browser') return { ok: false };
+    if (!['integrated', 'browser', 'program'].includes(mode)) return { ok: false };
     appServer.writeConfig(appServer.getState().dataDir, { whatsapp: mode });
     log(`WhatsApp: modo ${mode}`);
     return { ok: true };
+  });
+  // Elegir el programa de WhatsApp (un .exe). Devuelve { canceled, program }; solo se guarda si se eligió uno.
+  handle('desktop:choose-whatsapp-program', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Elegí el programa de WhatsApp',
+      properties: ['openFile'],
+      filters: [{ name: 'Programas', extensions: ['exe'] }],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true };
+    const program = result.filePaths[0];
+    appServer.writeConfig(appServer.getState().dataDir, { whatsappProgram: program });
+    log(`WhatsApp: programa elegido ${program}`);
+    return { canceled: false, program };
   });
 
   handle('desktop:get-update-status', () => updates.getStatus());

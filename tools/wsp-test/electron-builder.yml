@@ -1,4 +1,6 @@
-# Prueba aparte de la aplicación principal: un .exe portátil (no se instala) de 32 bits con WhatsApp Web.
+# Prueba aparte de la aplicación principal: WhatsApp Web en un programa de 32 bits que no se instala.
+# Dos formas: un .exe portátil (un solo archivo, pero se descomprime en cada apertura: lento) y un .zip con la carpeta
+# (se descomprime una vez y abre al instante: es la que sirve para que la aplicación del negocio la abra con un número).
 # Se arma desde la carpeta desktop (ya tiene electron-builder):  npm run wsp-test
 appId: com.mercaderiaguajardo.wsptest
 productName: WhatsApp Prueba
@@ -20,6 +22,13 @@ win:
     - target: portable
       arch:
         - ia32
+    - target: zip
+      arch:
+        - ia32
+
+portable:
   artifactName: WhatsAppPrueba-${version}.exe
+
+artifactName: WhatsAppPrueba-${version}-carpeta.${ext}
 
 publish: null

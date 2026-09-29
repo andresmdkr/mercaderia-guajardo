@@ -3,6 +3,9 @@
 // Es una ventana aparte, con su propia sesión guardada (se escanea el QR una sola vez) y sin acceso a nada de la
 // aplicación: solo carga web.whatsapp.com. Se crea cuando se pide y se destruye al cerrarla (libera la memoria).
 
+const { spawn } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
 const { BrowserWindow, dialog, shell } = require('electron');
 
 const HOST = 'https://web.whatsapp.com';
@@ -170,8 +173,44 @@ async function open(url, { icon, log }) {
   return { ok: true };
 }
 
+// Lanza otro programa de WhatsApp (por ejemplo la prueba aparte) pasándole solo el número. El programa lo elige el
+// usuario en Configuración; acá se comprueba que exista, que sea un .exe y se lo abre sin consola ni intérprete de comandos.
+// Si no se puede abrir, se avisa y se ofrece el navegador. Devuelve { ok, message }.
+function openWithProgram(program, url, { log }) {
+  const phone = parsePhone(url);
+  if (!phone) return { ok: false, message: 'Enlace de WhatsApp no válido' };
+  const fallback = (message) => {
+    log(`WhatsApp: no se pudo abrir el programa elegido (${message})`);
+    dialog
+      .showMessageBox({
+        type: 'warning',
+        title: 'WhatsApp',
+        message: 'No se pudo abrir el programa de WhatsApp elegido.',
+        detail: `${message}\n\nPodés elegir otro en Configuración, o abrir el chat en el navegador de la PC.`,
+        buttons: ['Abrir en el navegador', 'Cancelar'],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then(({ response }) => response === 0 && shell.openExternal(url));
+    return { ok: false, message };
+  };
+
+  if (typeof program !== 'string' || path.extname(program).toLowerCase() !== '.exe' || !fs.existsSync(program)) {
+    return fallback(`No se encuentra el programa: ${program || '(ninguno elegido)'}`);
+  }
+  try {
+    const child = spawn(program, [`--telefono=${phone}`], { detached: true, stdio: 'ignore', shell: false });
+    child.once('error', (error) => fallback(error.message));
+    child.unref();
+    log(`WhatsApp: abre el chat con ${path.basename(program)}`);
+    return { ok: true };
+  } catch (error) {
+    return fallback(error.message);
+  }
+}
+
 function close() {
   if (isOpen()) win.destroy();
 }
 
-module.exports = { open, close, owns, parsePhone };
+module.exports = { open, openWithProgram, close, owns, parsePhone };

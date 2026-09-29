@@ -7,8 +7,9 @@
 //   enterDemo()                  activa el modo de prueba (base con datos de ejemplo) y reinicia la app → { ok, message }
 //   exitDemo(fresh)              sale del modo de prueba y reinicia; con fresh = true aparta los datos reales y arranca vacía → { ok, message }
 //   openWhatsapp(url)            abre el chat (enlace wa.me/<número>) en la ventana de WhatsApp de la app, o en el navegador según la opción elegida → { ok, message }
-//   getWhatsappMode()            'integrated' (ventana de la app) o 'browser' (navegador del sistema)
+//   getWhatsappSettings()        → { mode: 'integrated' (ventana de la app) | 'browser' (navegador del sistema) | 'program' (otro programa), program }
 //   setWhatsappMode(mode)        cambia esa opción → { ok }
+//   chooseWhatsappProgram()      abre el selector de archivos para elegir el programa (.exe) → { canceled, program }
 //   getUpdateStatus()            estado del actualizador → { status, message }
 //   checkForUpdates()            busca actualizaciones (el avance llega por onUpdateStatus)
 //   installUpdate()              instala la actualización descargada y reinicia

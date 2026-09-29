@@ -9,6 +9,8 @@ const os = require('node:os');
 const path = require('node:path');
 
 const WHATSAPP_URL = 'https://web.whatsapp.com/';
+// La aplicación del negocio la puede abrir con un número: WhatsAppPrueba.exe --telefono=5491155551234
+const phoneFromArgs = (argv) => argv.map((arg) => /^--telefono=(\d{8,15})$/.exec(arg)).find(Boolean)?.[1] ?? null;
 // WhatsApp Web rechaza navegadores que considera viejos; Electron 22 trae Chromium 108. Se presenta como uno más nuevo.
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -54,6 +56,67 @@ function log(message) {
 }
 
 let win = null;
+let probe = null; // intento de abrir un chat sin recargar: { link, notHandled }
+let openedChat = null; // { phone, header }
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// (Misma lógica que desktop/src/whatsapp.js de la aplicación del negocio: cambiar de chat sin recargar la página.)
+const READ_CHAT_HEADER = "(() => { const main = document.querySelector('#main'); return main ? (main.querySelector('header') || main).innerText.slice(0, 120) : ''; })()";
+const IS_LOGGED_IN = "Boolean(document.querySelector('#pane-side'))";
+const clickLink = (link) =>
+  `(() => { const a = document.createElement('a'); a.href = ${JSON.stringify(link)}; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.style.display = 'none'; document.body.appendChild(a); a.click(); a.remove(); })()`;
+
+async function openInPage(phone) {
+  const contents = win.webContents;
+  if (!(await contents.executeJavaScript(IS_LOGGED_IN).catch(() => false))) return false;
+  const before = await contents.executeJavaScript(READ_CHAT_HEADER).catch(() => '');
+  if (before && openedChat?.phone === phone && openedChat.header === before) return true;
+  for (const link of [`https://wa.me/${phone}`, `https://api.whatsapp.com/send?phone=${phone}`]) {
+    let notHandled = false;
+    probe = { link, notHandled: () => (notHandled = true) };
+    try {
+      await contents.executeJavaScript(clickLink(link), true);
+      const deadline = Date.now() + 3000;
+      while (Date.now() < deadline && !notHandled) {
+        await sleep(300);
+        const after = await contents.executeJavaScript(READ_CHAT_HEADER).catch(() => '');
+        if (after && after !== before) {
+          log(`chat abierto sin recargar (con ${new URL(link).host})`);
+          openedChat = { phone, header: after };
+          return true;
+        }
+      }
+      log(`${notHandled ? 'no manejó' : 'no cambió el chat con'} el enlace de ${new URL(link).host}`);
+    } catch (error) {
+      log(`falló el intento sin recargar: ${error.message}`);
+      return false;
+    } finally {
+      probe = null;
+    }
+  }
+  return false;
+}
+
+// Abre el chat de ese número: sin recargar si se puede, recargando si no.
+let opening = false;
+async function openChat(phone) {
+  if (!win || opening) return;
+  log(`pedido desde la aplicación del negocio: chat de ${phone}`);
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+  if (!win.webContents.isLoading() && win.webContents.getURL().startsWith(WHATSAPP_URL)) {
+    opening = true;
+    try {
+      if (await openInPage(phone)) return;
+    } finally {
+      opening = false;
+    }
+  }
+  log('carga el chat (recarga la página)');
+  openedChat = null;
+  win.webContents.loadURL(`${WHATSAPP_URL}send?phone=${phone}`);
+}
 
 function askReload(text) {
   if (!win) return;
@@ -108,6 +171,10 @@ function createWindow() {
 
   // Los enlaces que no son de WhatsApp (por ejemplo wa.me o páginas externas) se abren en el navegador de la PC.
   wc.setWindowOpenHandler(({ url }) => {
+    if (probe && url === probe.link) {
+      probe.notHandled();
+      return { action: 'deny' };
+    }
     if (/^https:\/\//.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
@@ -126,7 +193,8 @@ function createWindow() {
     win = null;
   });
 
-  wc.loadURL(WHATSAPP_URL);
+  const startPhone = phoneFromArgs(process.argv);
+  wc.loadURL(startPhone ? `${WHATSAPP_URL}send?phone=${startPhone}` : WHATSAPP_URL);
 }
 
 function buildMenu() {
@@ -166,7 +234,12 @@ function buildMenu() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => win?.focus());
+  // Si la aplicación del negocio la vuelve a abrir con otro número, esta misma ventana cambia de chat.
+  app.on('second-instance', (event, argv) => {
+    win?.focus();
+    const phone = phoneFromArgs(argv);
+    if (phone) openChat(phone);
+  });
   app.on('child-process-gone', (event, details) => log(`AVISO proceso interno caído: tipo=${details.type} motivo=${details.reason} código=${details.exitCode}`));
   app.whenReady().then(() => {
     log(`--- inicio · Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · ${process.platform} ${process.arch} · GPU ${useGpu ? 'sí' : 'no'} ---`);
