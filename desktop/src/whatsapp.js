@@ -15,7 +15,7 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 const ALLOWED_PERMISSIONS = new Set(['notifications', 'media', 'clipboard-sanitized-write', 'fullscreen']);
 // Solo enlaces wa.me con un número (los arma la pantalla de Clientes), nunca una dirección cualquiera.
 const PHONE_LINK = /^https:\/\/wa\.me\/(\d{8,15})$/;
-const CHAT_WAIT_MS = 3000; // cuánto se espera a que WhatsApp cambie de chat por su cuenta antes de recargar
+const CHAT_WAIT_MS = 12000; // cuánto se espera a que WhatsApp cambie de chat por su cuenta antes de recargar (la PC es lenta)
 
 let win = null;
 let currentPhone = null; // el último chat pedido
@@ -68,7 +68,12 @@ async function openInPage(phone, log) {
           return true;
         }
       }
-      log(`WhatsApp: ${notHandled ? 'no manejó' : 'no cambió el chat con'} el enlace de ${new URL(link).host}`);
+      if (!notHandled) {
+        // WhatsApp tomó el enlace pero el chat no cambió a tiempo: probar otro enlace no ayuda, se recarga.
+        log(`WhatsApp: aceptó el enlace de ${new URL(link).host} pero el chat no cambió en ${CHAT_WAIT_MS / 1000} s`);
+        return false;
+      }
+      log(`WhatsApp: no manejó el enlace de ${new URL(link).host}`);
     } catch (error) {
       log(`WhatsApp: falló el intento sin recargar: ${error.message}`);
       return false;
@@ -144,7 +149,7 @@ function create({ icon, log }) {
 
 // Abre (o trae al frente) la ventana de WhatsApp en el chat de ese número. Devuelve { ok, message }.
 // Si la ventana ya estaba abierta con la sesión iniciada, cambia de chat sin recargar; si no, carga el chat.
-async function open(url, { icon, log }, { paste = false } = {}) {
+async function open(url, { icon, log }, { paste = false, file = null } = {}) {
   const phone = parsePhone(url);
   if (!phone) return { ok: false, message: 'Enlace de WhatsApp no válido' };
   if (probing) return { ok: true }; // ya está cambiando de chat: un segundo toque no tiene que pisarlo
@@ -161,7 +166,7 @@ async function open(url, { icon, log }, { paste = false } = {}) {
     probing = true;
     try {
       if (await openInPage(phone, log)) {
-        if (paste) pasteWhenReady(log); // sin esperarlo: la pantalla no tiene que quedar bloqueada
+        if (paste) pasteWhenReady(log, file); // sin esperarlo: la pantalla no tiene que quedar bloqueada
         return { ok: true };
       }
     } finally {
@@ -173,14 +178,14 @@ async function open(url, { icon, log }, { paste = false } = {}) {
   log(`WhatsApp: carga el chat (ventana ${existed ? 'ya abierta' : 'nueva'})`);
   openedChat = null;
   const loading = win.webContents.loadURL(`${HOST}/send?phone=${phone}`).catch(() => {});
-  if (paste) loading.then(() => pasteWhenReady(log));
+  if (paste) loading.then(() => pasteWhenReady(log, file));
   return { ok: true };
 }
 
 // Lanza otro programa de WhatsApp (por ejemplo la prueba aparte) pasándole solo el número. El programa lo elige el
 // usuario en Configuración; acá se comprueba que exista, que sea un .exe y se lo abre sin consola ni intérprete de comandos.
 // Si no se puede abrir, se avisa y se ofrece el navegador. Devuelve { ok, message }.
-function openWithProgram(program, url, { log }, { paste = false } = {}) {
+function openWithProgram(program, url, { log }, { paste = false, file = null } = {}) {
   const phone = parsePhone(url);
   if (!phone) return { ok: false, message: 'Enlace de WhatsApp no válido' };
   const fallback = (message) => {
@@ -204,7 +209,7 @@ function openWithProgram(program, url, { log }, { paste = false } = {}) {
   }
   try {
     // --pegar: WhatsApp Guajardo pega solo el comprobante que quedó en el portapapeles (otros programas lo ignoran)
-    const args = [`--telefono=${phone}`, ...(paste ? ['--pegar'] : [])];
+    const args = [`--telefono=${phone}`, ...(paste ? ['--pegar'] : []), ...(paste && file ? [`--archivo=${file}`] : [])];
     const child = spawn(program, args, { detached: true, stdio: 'ignore', shell: false });
     child.once('error', (error) => fallback(error.message));
     child.unref();
@@ -215,24 +220,81 @@ function openWithProgram(program, url, { log }, { paste = false } = {}) {
   }
 }
 
-// Pega lo que hay en el portapapeles (el comprobante, copiado como archivo) en el chat abierto. Espera a que el chat
-// esté listo (aparece el campo para escribir). Si no llega a abrirse, el usuario lo pega a mano con Ctrl+V.
-async function pasteWhenReady(log) {
-  const deadline = Date.now() + 45000;
-  while (Date.now() < deadline && isOpen()) {
-    const ready = await win.webContents.executeJavaScript("Boolean(document.querySelector('#main footer'))").catch(() => false);
-    if (ready) {
-      await sleep(700); // deja que WhatsApp termine de acomodar el chat y le dé el foco al campo
-      if (!isOpen()) return;
-      win.webContents.focus();
-      win.webContents.paste();
-      log('WhatsApp: comprobante pegado en el chat');
-      return;
+// Pega el portapapeles (el comprobante, copiado como archivo) en el chat abierto:
+// 1) espera a que el chat esté listo (aparece el campo para escribir; en una PC lenta WhatsApp puede tardar minutos en
+//    bajar los mensajes), 2) enfoca el campo de mensaje (sin foco en él, pegar no hace nada), 3) pega y comprueba que
+//    el archivo llegó a la página, 4) si no llegó, suelta el archivo sobre el chat (plan B).
+// Si nada anda, el archivo sigue copiado y se pega a mano con Ctrl+V.
+const FOCUS_COMPOSER = `(() => {
+  const selectors = ['#main footer [contenteditable="true"]', '#main [contenteditable="true"][role="textbox"]', 'footer [contenteditable="true"]'];
+  let box = null;
+  for (const selector of selectors) {
+    const found = document.querySelectorAll(selector);
+    if (found.length) { box = found[found.length - 1]; break; }
+  }
+  if (!box) return null;
+  box.focus();
+  const el = document.activeElement;
+  return { tag: el.tagName, editable: Boolean(el.isContentEditable), role: el.getAttribute('role'), tab: el.getAttribute('data-tab'), enFooter: Boolean(el.closest('footer')) };
+})()`;
+const LISTEN_PASTE = "(() => { window.__mgPaste = null; document.addEventListener('paste', (e) => { window.__mgPaste = { files: e.clipboardData.files.length }; }, { capture: true, once: true }); })()";
+const CENTER_OF_CHAT = "(() => { const m = document.querySelector('#main') || document.body; const r = m.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; })()";
+const PASTE_WAIT_MS = 180000;
+
+// Plan B: soltar el archivo sobre el chat (como arrastrarlo desde una carpeta), con el protocolo de depuración.
+async function dropFile(file, log) {
+  if (!file || !fs.existsSync(file)) return;
+  const contents = win.webContents;
+  try {
+    const point = await contents.executeJavaScript(CENTER_OF_CHAT);
+    contents.debugger.attach('1.3');
+    try {
+      const data = { items: [], files: [file], dragOperationsMask: 1 };
+      for (const type of ['dragEnter', 'dragOver', 'drop']) {
+        await contents.debugger.sendCommand('Input.dispatchDragEvent', { type, x: point.x, y: point.y, data });
+      }
+      log('WhatsApp: se soltó el archivo sobre el chat (plan B)');
+    } finally {
+      contents.debugger.detach();
     }
+  } catch (error) {
+    log(`WhatsApp: no se pudo soltar el archivo: ${error.message}`);
+  }
+}
+
+async function pasteWhenReady(log, file) {
+  const deadline = Date.now() + PASTE_WAIT_MS;
+  let ready = false;
+  while (Date.now() < deadline && isOpen()) {
+    ready = await win.webContents.executeJavaScript("Boolean(document.querySelector('#main footer'))").catch(() => false);
+    if (ready) break;
     await sleep(500);
   }
-  log('WhatsApp: no se pegó solo el comprobante (el chat no llegó a abrirse)');
+  if (!ready || !(isOpen())) {
+    log('WhatsApp: no se pegó solo el comprobante (el chat no llegó a abrirse)');
+    return;
+  }
+  await sleep(800); // deja que WhatsApp termine de acomodar el chat
+  if (!(isOpen())) return;
+  const contents = win.webContents;
+  const focused = await contents.executeJavaScript(FOCUS_COMPOSER).catch(() => null);
+  log(`WhatsApp: campo de mensaje enfocado: ${JSON.stringify(focused)}`);
+  if (!focused || !focused.editable) {
+    // Sin el campo de mensaje enfocado, pegar no sirve (el evento llega a la página pero WhatsApp lo ignora).
+    log('WhatsApp: no se encontró el campo de mensaje: se prueba soltando el archivo');
+    await dropFile(file, log);
+    return;
+  }
+  await contents.executeJavaScript(LISTEN_PASTE).catch(() => {});
+  contents.focus();
+  contents.paste();
+  await sleep(1500);
+  const got = await contents.executeJavaScript('window.__mgPaste').catch(() => null);
+  log(got ? `WhatsApp: el pegado llegó a la página con ${got.files} archivo(s)` : 'WhatsApp: el pegado no llegó a la página');
+  if (got && got.files > 0) return;
+  await dropFile(file, log);
 }
+
 
 function close() {
   if (isOpen()) win.destroy();
