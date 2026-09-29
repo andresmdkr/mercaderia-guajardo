@@ -1,6 +1,6 @@
 import { createTheme } from '@mui/material';
 
-const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+const SANS = '"Inter Variable", system-ui, "Segoe UI", Roboto, Arial, sans-serif';
 const SERIF = 'ui-serif, Georgia, Cambria, "Times New Roman", serif';
 
 // Un color por sección de la app. Se usan en el menú, los títulos y la portada.

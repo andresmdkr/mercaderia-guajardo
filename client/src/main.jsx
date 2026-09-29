@@ -7,6 +7,7 @@ import { store } from './redux/store';
 import { sessionExpired } from './redux/sessionSlice';
 import { setUnauthorizedHandler } from './services/api';
 import ThemeModeProvider from './theme/ThemeModeProvider';
+import './theme/fonts.css';
 
 setUnauthorizedHandler(() => store.dispatch(sessionExpired()));
 
