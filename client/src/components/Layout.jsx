@@ -37,7 +37,9 @@ function NavItem({ section, onNavigate, nested = false }) {
   // Un grupo con submenú se marca solo cuando estás en su página principal;
   // estando en un hijo, el grupo queda desplegado y se marca el hijo.
   let selected = pathname.startsWith(section.path);
-  if (section.path === '/' || hasChildren) selected = pathname === section.path;
+  if (section.path === '/') selected = pathname === section.path;
+  // Con submenú, la sección se marca salvo que la pantalla sea una de sus subsecciones (así /sales/new sigue marcando Ventas).
+  if (hasChildren) selected = pathname.startsWith(section.path) && !section.children.some((child) => pathname.startsWith(child.path));
   const expanded = hasChildren && pathname.startsWith(section.path);
 
   return (

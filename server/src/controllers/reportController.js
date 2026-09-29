@@ -162,4 +162,31 @@ async function lowStock({ page, limit }) {
   return { items: rows, total: count, page, pages: Math.ceil(count / limit) };
 }
 
-module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers };
+const CASH_CLOSE_METHODS = ['cash', 'transfer', 'card'];
+
+// Cierre de caja de un día: lo cobrado por cada medio de pago (siempre los tres, aunque sean $0), los descuentos y las
+// ventas anuladas aparte (esas no suman). `from` / `to` son el primer y el último instante del día, en hora local.
+async function cashClose({ from, to }) {
+  const [totals, byMethod, voided] = await Promise.all([
+    summary({ from, to }),
+    paymentMethods({ from, to }),
+    sequelize.query(
+      `SELECT COUNT(*) AS count, COALESCE(SUM(total), 0) AS total
+       FROM sales WHERE status = 'voided' AND created_at >= :from AND created_at <= :to`,
+      { replacements: { from: dbDate(from), to: dbDate(to) }, type: QueryTypes.SELECT }
+    ),
+  ]);
+
+  return {
+    salesCount: totals.salesCount,
+    total: totals.revenue,
+    discounts: totals.discounts,
+    methods: CASH_CLOSE_METHODS.map((method) => {
+      const found = byMethod.find((row) => row.method === method);
+      return { method, salesCount: found?.salesCount ?? 0, total: found?.total ?? 0 };
+    }),
+    voided: { count: Number(voided[0].count), total: money(voided[0].total) },
+  };
+}
+
+module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers, cashClose };

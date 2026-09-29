@@ -3,6 +3,7 @@ import CategoryIcon from '@mui/icons-material/CategoryOutlined';
 import HomeIcon from '@mui/icons-material/HomeOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
 import PeopleIcon from '@mui/icons-material/PeopleOutlined';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSaleOutlined';
 import ReceiptIcon from '@mui/icons-material/ReceiptLongOutlined';
 import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import SwapVertIcon from '@mui/icons-material/SwapVertOutlined';
@@ -18,6 +19,15 @@ export const sections = [
     path: '/sales',
     icon: ReceiptIcon,
     description: 'Historial de ventas, detalle y anulaciones',
+    children: [
+      {
+        key: 'cashClose',
+        label: 'Cierre de caja',
+        path: '/sales/cash-close',
+        icon: PointOfSaleIcon,
+        description: 'Lo cobrado en el día por medio de pago',
+      },
+    ],
   },
   {
     key: 'products',

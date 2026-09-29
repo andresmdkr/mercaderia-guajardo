@@ -42,3 +42,11 @@ const dateTimeLong = new Intl.DateTimeFormat('es-AR', {
 export const formatDateTimeLong = (value) => dateTimeLong.format(new Date(value));
 
 export const formatDateTime = (value) => dateTime.format(new Date(value));
+
+const dayLong = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+// "2026-09-28" → "lunes, 28 de septiembre de 2026" (se arma con la fecha local, sin corrimientos de zona horaria)
+export const formatDayLong = (isoDay) => {
+  const [year, month, day] = isoDay.split('-').map(Number);
+  return dayLong.format(new Date(year, month - 1, day));
+};

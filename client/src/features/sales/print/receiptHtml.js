@@ -4,17 +4,9 @@
 // Los imports llevan la extensión .js para poder probar este módulo también desde Node.
 import { formatDateTimeLong, formatMoney, formatVoucherNumber } from '../../../utils/format.js';
 import { PAYMENT_METHODS } from '../salesConstants.js';
+import { escapeHtml } from './htmlUtils.js';
 
 const LEGEND = 'Comprobante no válido como factura';
-
-// Todo texto que viene de la base (nombres, notas...) pasa por acá antes de meterse en el HTML.
-const escapeHtml = (value) =>
-  String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 
 const STYLES = `
   @page { margin: 10mm; }

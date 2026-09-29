@@ -68,4 +68,18 @@ async function topCustomers(req, res, next) {
   }
 }
 
-module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers };
+// ?date=AAAA-MM-DD (si no viene, es hoy). El día va de las 00:00 a las 23:59:59 en hora local.
+async function cashClose(req, res, next) {
+  try {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const date = req.query.date || `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const from = parseDate(date, 'fecha');
+    const to = parseDate(date, 'fecha', true);
+    res.json({ date, ...(await reportController.cashClose({ from, to })) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers, cashClose };
