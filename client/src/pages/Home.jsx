@@ -26,7 +26,7 @@ function NewSaleCard() {
         gap: 2.5,
         flexWrap: 'wrap',
         p: 2.5,
-        mb: 4,
+        mb: 3,
         color: 'inherit',
         textDecoration: 'none',
         borderColor: color,
@@ -74,12 +74,16 @@ export default function Home() {
 
       <NewSaleCard />
 
+      <Box sx={{ mb: 4 }}>
+        <QuickLinks />
+      </Box>
+
       <Typography variant="h6" sx={{ mb: 1.5 }}>
         Hoy
       </Typography>
       <SummaryTiles summary={summary} loading={loading} />
 
-      <Grid container spacing={2} sx={{ mt: 1, mb: 4 }}>
+      <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 7 }}>
           <RecentSalesCard sales={sales} />
         </Grid>
@@ -87,8 +91,6 @@ export default function Home() {
           <LowStockCard lowStock={lowStock} />
         </Grid>
       </Grid>
-
-      <QuickLinks />
     </>
   );
 }
