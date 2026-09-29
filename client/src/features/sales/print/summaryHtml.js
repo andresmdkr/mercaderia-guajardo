@@ -1,6 +1,6 @@
-// Resumen del cierre de caja en HTML, para imprimir (hoja A4 o ticket: el ancho se adapta). Documento autónomo, sin scripts.
+// Resumen de ventas de un período en HTML, para imprimir (hoja A4 o ticket: el ancho se adapta). Documento autónomo, sin scripts.
 // Los imports llevan la extensión .js para poder probar este módulo también desde Node.
-import { formatDateTimeLong, formatDayLong, formatInteger, formatMoney } from '../../../utils/format.js';
+import { formatDateTimeLong, formatInteger, formatMoney, formatPeriodLabel } from '../../../utils/format.js';
 import { PAYMENT_METHODS } from '../salesConstants.js';
 import { escapeHtml } from './htmlUtils.js';
 
@@ -25,13 +25,14 @@ const STYLES = `
 `;
 
 /**
- * @param close resultado de GET /reports/cash-close: { date, salesCount, total, discounts, methods, voided }
+ * @param summary resultado de GET /reports/period-summary: { from, to, salesCount, total, discounts, methods, voided }
  * @param business datos del negocio { name }
  * @param userName quién imprime
  * @returns documento HTML completo
  */
-export function buildCashCloseHtml(close, business, userName) {
-  const rows = close.methods
+export function buildSummaryHtml(summary, business, userName) {
+  const period = formatPeriodLabel(summary.from, summary.to);
+  const rows = summary.methods
     .map(
       (m) => `<tr>
         <td>${escapeHtml(PAYMENT_METHODS[m.method] ?? m.method)}</td>
@@ -45,24 +46,24 @@ export function buildCashCloseHtml(close, business, userName) {
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Cierre de caja ${escapeHtml(close.date)}</title>
+<title>Resumen de ventas - ${escapeHtml(period)}</title>
 <style>${STYLES}</style>
 </head>
 <body>
-  <h1>Cierre de caja</h1>
+  <h1>Resumen de ventas</h1>
   <div class="business">${escapeHtml(business.name)}</div>
-  <div class="day">${escapeHtml(formatDayLong(close.date))}</div>
+  <div class="day">${escapeHtml(period)}</div>
   <hr>
   <table>
     <thead><tr><th>Medio de pago</th><th class="num">Ventas</th><th class="num">Total cobrado</th></tr></thead>
     <tbody>
       ${rows}
-      <tr class="total"><td>TOTAL</td><td class="num">${escapeHtml(formatInteger(close.salesCount))}</td><td class="num">${escapeHtml(formatMoney(close.total))}</td></tr>
+      <tr class="total"><td>TOTAL</td><td class="num">${escapeHtml(formatInteger(summary.salesCount))}</td><td class="num">${escapeHtml(formatMoney(summary.total))}</td></tr>
     </tbody>
   </table>
   <div class="extra">
-    <div class="muted"><span>Descuentos otorgados (ya restados del total)</span><span>${escapeHtml(formatMoney(close.discounts))}</span></div>
-    <div class="muted"><span>Ventas anuladas (no suman): ${escapeHtml(formatInteger(close.voided.count))}</span><span>${escapeHtml(formatMoney(close.voided.total))}</span></div>
+    <div class="muted"><span>Descuentos otorgados (ya restados del total)</span><span>${escapeHtml(formatMoney(summary.discounts))}</span></div>
+    <div class="muted"><span>Ventas anuladas (no suman): ${escapeHtml(formatInteger(summary.voided.count))}</span><span>${escapeHtml(formatMoney(summary.voided.total))}</span></div>
   </div>
   <div class="footer">Resumen interno, no es un comprobante fiscal · Impreso el ${escapeHtml(formatDateTimeLong(new Date()))}${userName ? ` por ${escapeHtml(userName)}` : ''}</div>
 </body>

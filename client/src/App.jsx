@@ -8,8 +8,8 @@ import Login from './pages/Login';
 import CategoriesPage from './features/categories/pages/CategoriesPage';
 import CustomersPage from './features/customers/pages/CustomersPage';
 import ProductsPage from './features/products/pages/ProductsPage';
-import CashClosePage from './features/sales/pages/CashClosePage';
 import NewSalePage from './features/sales/pages/NewSalePage';
+import SummariesPage from './features/sales/pages/SummariesPage';
 import ReportsPage from './features/reports/pages/ReportsPage';
 import SettingsPage from './features/settings/pages/SettingsPage';
 import SalesPage from './features/sales/pages/SalesPage';
@@ -32,10 +32,9 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/sales" element={<SalesPage />} />
           <Route path="/sales/new" element={<NewSalePage />} />
-          <Route path="/sales/cash-close" element={<CashClosePage />} />
+          <Route path="/sales/summaries" element={<SummariesPage />} />
           <Route path="/products" element={<ProductsPage />} />
-          <Route path="/products/categories" element={<CategoriesPage />} />
-          <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/products/categories" element={<CategoriesPage />} />          <Route path="/customers" element={<CustomersPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/products/stock" element={<StockPage />} />

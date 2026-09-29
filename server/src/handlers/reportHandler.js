@@ -68,18 +68,15 @@ async function topCustomers(req, res, next) {
   }
 }
 
-// ?date=AAAA-MM-DD (si no viene, es hoy). El día va de las 00:00 a las 23:59:59 en hora local.
-async function cashClose(req, res, next) {
+// ?from=AAAA-MM-DD&to=AAAA-MM-DD (los dos opcionales; sin ellos, todo el historial). Un día es from = to.
+// Cada día va de las 00:00 a las 23:59:59 en hora local.
+async function periodSummary(req, res, next) {
   try {
-    const now = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
-    const date = req.query.date || `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    const from = parseDate(date, 'fecha');
-    const to = parseDate(date, 'fecha', true);
-    res.json({ date, ...(await reportController.cashClose({ from, to })) });
+    const period = parsePeriod(req.query);
+    res.json({ from: req.query.from || null, to: req.query.to || null, ...(await reportController.periodSummary(period)) });
   } catch (error) {
     next(error);
   }
 }
 
-module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers, cashClose };
+module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers, periodSummary };

@@ -31,8 +31,8 @@ function Tile({ label, value, note, big = false }) {
 
 const salesNote = (count) => `${formatInteger(count)} ${count === 1 ? 'venta' : 'ventas'}`;
 
-// Cifras del día: total cobrado, cada medio de pago y, aparte, descuentos y ventas anuladas (esas no suman).
-export default function CashCloseSummary({ data, loading }) {
+// Cifras del período: total cobrado, cada medio de pago y, aparte, descuentos y ventas anuladas (esas no suman).
+export default function PeriodSummary({ data, loading }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, opacity: loading ? 0.55 : 1, transition: 'opacity 0.15s' }}>
       <Tile big label="Total cobrado" value={formatMoney(data.total)} note={salesNote(data.salesCount)} />

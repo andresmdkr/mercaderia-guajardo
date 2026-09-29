@@ -50,3 +50,14 @@ export const formatDayLong = (isoDay) => {
   const [year, month, day] = isoDay.split('-').map(Number);
   return dayLong.format(new Date(year, month - 1, day));
 };
+
+// "2026-09-28" → "28/09/2026"
+export const formatDayShort = (isoDay) => isoDay.split('-').reverse().join('/');
+
+// Texto del período de un resumen: un día en largo, un rango "Del 01/09/2026 al 29/09/2026", o todo el historial.
+export function formatPeriodLabel(from, to) {
+  if (!from && !to) return 'Todo el historial';
+  if (from && from === to) return formatDayLong(from);
+  if (from && to) return `Del ${formatDayShort(from)} al ${formatDayShort(to)}`;
+  return from ? `Desde el ${formatDayShort(from)}` : `Hasta el ${formatDayShort(to)}`;
+}

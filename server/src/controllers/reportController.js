@@ -162,26 +162,37 @@ async function lowStock({ page, limit }) {
   return { items: rows, total: count, page, pages: Math.ceil(count / limit) };
 }
 
-const CASH_CLOSE_METHODS = ['cash', 'transfer', 'card'];
+const SUMMARY_METHODS = ['cash', 'transfer', 'card'];
 
-// Cierre de caja de un día: lo cobrado por cada medio de pago (siempre los tres, aunque sean $0), los descuentos y las
-// ventas anuladas aparte (esas no suman). `from` / `to` son el primer y el último instante del día, en hora local.
-async function cashClose({ from, to }) {
+// Resumen de ventas de un período (un día, una semana, un mes o entre dos fechas): lo cobrado por cada medio de pago
+// (siempre los tres, aunque sean $0), los descuentos y las ventas anuladas aparte (esas no suman).
+// `from` / `to` son opcionales (sin ellas, todo el historial); vienen como primer y último instante, en hora local.
+async function periodSummary({ from, to }) {
+  const voidedConditions = ["status = 'voided'"];
+  const voidedReplacements = {};
+  if (from) {
+    voidedConditions.push('created_at >= :from');
+    voidedReplacements.from = dbDate(from);
+  }
+  if (to) {
+    voidedConditions.push('created_at <= :to');
+    voidedReplacements.to = dbDate(to);
+  }
+
   const [totals, byMethod, voided] = await Promise.all([
     summary({ from, to }),
     paymentMethods({ from, to }),
-    sequelize.query(
-      `SELECT COUNT(*) AS count, COALESCE(SUM(total), 0) AS total
-       FROM sales WHERE status = 'voided' AND created_at >= :from AND created_at <= :to`,
-      { replacements: { from: dbDate(from), to: dbDate(to) }, type: QueryTypes.SELECT }
-    ),
+    sequelize.query(`SELECT COUNT(*) AS count, COALESCE(SUM(total), 0) AS total FROM sales WHERE ${voidedConditions.join(' AND ')}`, {
+      replacements: voidedReplacements,
+      type: QueryTypes.SELECT,
+    }),
   ]);
 
   return {
     salesCount: totals.salesCount,
     total: totals.revenue,
     discounts: totals.discounts,
-    methods: CASH_CLOSE_METHODS.map((method) => {
+    methods: SUMMARY_METHODS.map((method) => {
       const found = byMethod.find((row) => row.method === method);
       return { method, salesCount: found?.salesCount ?? 0, total: found?.total ?? 0 };
     }),
@@ -189,4 +200,4 @@ async function cashClose({ from, to }) {
   };
 }
 
-module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers, cashClose };
+module.exports = { summary, topProducts, lowStock, paymentMethods, topCustomers, periodSummary };

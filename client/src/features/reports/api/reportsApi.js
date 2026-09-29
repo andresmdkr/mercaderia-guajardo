@@ -10,5 +10,6 @@ export const fetchPaymentMethods = (params) => api.get('/reports/payment-methods
 
 export const fetchTopCustomers = (params) => api.get('/reports/top-customers', { params }).then((res) => res.data);
 
-// Cierre de caja de un día (AAAA-MM-DD): { date, salesCount, total, discounts, methods: [{ method, salesCount, total }], voided: { count, total } }
-export const fetchCashClose = (date) => api.get('/reports/cash-close', { params: { date } }).then((res) => res.data);
+// Resumen de ventas de un período (from / to en AAAA-MM-DD, opcionales; un día es from = to):
+// { from, to, salesCount, total, discounts, methods: [{ method, salesCount, total }], voided: { count, total } }
+export const fetchPeriodSummary = (params) => api.get('/reports/period-summary', { params }).then((res) => res.data);

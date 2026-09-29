@@ -21,11 +21,11 @@ export const sections = [
     description: 'Historial de ventas, detalle y anulaciones',
     children: [
       {
-        key: 'cashClose',
-        label: 'Cierre de caja',
-        path: '/sales/cash-close',
+        key: 'summaries',
+        label: 'Resúmenes',
+        path: '/sales/summaries',
         icon: PointOfSaleIcon,
-        description: 'Lo cobrado en el día por medio de pago',
+        description: 'Lo cobrado por día, semana, mes o entre fechas',
       },
     ],
   },

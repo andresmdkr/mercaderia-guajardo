@@ -16,7 +16,7 @@ function printInIframe(html) {
   });
 }
 
-// Imprime un documento HTML completo (comprobante, cierre de caja...). En la app de escritorio abre el diálogo de
+// Imprime un documento HTML completo (comprobante, resumen de ventas...). En la app de escritorio abre el diálogo de
 // impresión de Windows (elegís la impresora); en el navegador, el del navegador. Devuelve { ok, cancelled?, message? }.
 export function printDocument(html) {
   return desktop ? desktop.printHtml(html) : printInIframe(html);
