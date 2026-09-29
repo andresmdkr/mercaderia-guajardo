@@ -128,8 +128,23 @@ function handle(channel, action) {
 const whatsappSettings = () => {
   const config = appServer.readConfig(appServer.getState().dataDir);
   const mode = ['browser', 'program'].includes(config.whatsapp) ? config.whatsapp : 'integrated';
-  return { mode, program: typeof config.whatsappProgram === 'string' ? config.whatsappProgram : null };
+  return {
+    mode,
+    program: typeof config.whatsappProgram === 'string' ? config.whatsappProgram : null,
+    keepAlive: config.whatsappKeepAlive === true, // WhatsApp Guajardo sigue corriendo al cerrar su ventana
+    preload: config.whatsappPreload === true, // se abre oculto al iniciar esta aplicación
+  };
 };
+
+// Precarga de WhatsApp: si está activada (y se usa "En otra aplicación"), unos segundos después de abrir esta aplicación
+// se abre WhatsApp Guajardo oculto. La demora deja que esta aplicación termine de arrancar primero (la PC es lenta).
+const PRELOAD_DELAY_MS = 15000;
+function schedulePreload() {
+  setTimeout(() => {
+    const { mode, program, preload } = whatsappSettings();
+    if (mode === 'program' && preload) whatsapp.preloadProgram(program, { log });
+  }, PRELOAD_DELAY_MS);
+}
 
 function relaunch() {
   app.relaunch();
@@ -164,12 +179,12 @@ function registerIpc() {
 
   handle('desktop:open-whatsapp', (url) => {
     if (!whatsapp.parsePhone(url)) return { ok: false, message: 'Enlace de WhatsApp no válido' };
-    const { mode, program } = whatsappSettings();
+    const { mode, program, keepAlive, preload } = whatsappSettings();
     if (mode === 'browser') {
       shell.openExternal(url);
       return { ok: true };
     }
-    if (mode === 'program') return whatsapp.openWithProgram(program, url, { log });
+    if (mode === 'program') return whatsapp.openWithProgram(program, url, { log }, { keepAlive: keepAlive || preload });
     return whatsapp.open(url, { icon: ICON, log });
   });
   // Enviar un comprobante por WhatsApp: se guarda el PDF, se deja copiado como archivo y se abre el chat (por donde
@@ -184,10 +199,10 @@ function registerIpc() {
     }
     const copy = await receiptShare.copyFileToClipboard(file);
     if (!copy.ok) log(`WhatsApp: no se pudo copiar el comprobante al portapapeles: ${copy.message}`);
-    const { mode, program } = whatsappSettings();
+    const { mode, program, keepAlive, preload } = whatsappSettings();
     let opened = { ok: true };
     if (mode === 'browser') shell.openExternal(url);
-    else if (mode === 'program') opened = whatsapp.openWithProgram(program, url, { log }, { paste: copy.ok, file });
+    else if (mode === 'program') opened = whatsapp.openWithProgram(program, url, { log }, { paste: copy.ok, file, keepAlive: keepAlive || preload });
     else opened = await whatsapp.open(url, { icon: ICON, log }, { paste: copy.ok, file });
     // Si no se pudo dejar copiado, se muestra el archivo en su carpeta para arrastrarlo al chat.
     if (!copy.ok) shell.showItemInFolder(file);
@@ -197,6 +212,14 @@ function registerIpc() {
   });
 
   handle('desktop:get-whatsapp-settings', () => whatsappSettings());
+  // Opciones de WhatsApp Guajardo: 'keepAlive' (segundo plano) y 'preload' (precarga al abrir esta aplicación).
+  handle('desktop:set-whatsapp-option', (name, value) => {
+    const keys = { keepAlive: 'whatsappKeepAlive', preload: 'whatsappPreload' };
+    if (!Object.hasOwn(keys, name) || typeof value !== 'boolean') return { ok: false };
+    appServer.writeConfig(appServer.getState().dataDir, { [keys[name]]: value });
+    log(`WhatsApp: ${name} = ${value}`);
+    return { ok: true };
+  });
   handle('desktop:set-whatsapp-mode', (mode) => {
     if (!['integrated', 'browser', 'program'].includes(mode)) return { ok: false };
     appServer.writeConfig(appServer.getState().dataDir, { whatsapp: mode });
@@ -332,6 +355,7 @@ app.whenReady().then(async () => {
     const { origin } = await appServer.start({ dataDir: app.getPath('userData'), appVersion: app.getVersion(), log });
     registerIpc();
     createMainWindow(origin);
+    schedulePreload();
     updates.setup({ onChange: onUpdateChange, logger: log });
     updates.check();
   } catch (error) {

@@ -3,7 +3,7 @@
 // (Windows 8.1, 1,5 GB de RAM). No usa nada de la aplicación principal. Si la página se cae, anota por qué
 // (memoria, motivo del cierre, texto que mostraba) en "registro-wsp.txt" para poder diagnosticarlo.
 
-const { app, BrowserWindow, Menu, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, Tray, dialog, nativeImage, shell } = require('electron');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -46,6 +46,16 @@ function readConfig() {
   }
 }
 const writeConfig = (changes) => fs.writeFileSync(configFile, JSON.stringify({ ...readConfig(), ...changes }, null, 2));
+
+// --- Segundo plano ---
+// --oculto           arranca sin mostrar la ventana (precarga): WhatsApp termina de cargar mientras se trabaja en otra cosa.
+// --segundo-plano=si|no   al cerrar la ventana, el programa sigue corriendo (queda un ícono junto al reloj de Windows).
+// La aplicación del negocio manda estas señales según lo que se elija en Configuración → WhatsApp.
+const startedAt = Date.now();
+const startHidden = process.argv.includes('--oculto');
+let keepAlive = readConfig().background === true;
+let quitting = false; // true cuando de verdad se quiere salir (menú, ícono de la bandeja, apagado de Windows)
+let tray = null;
 
 // La aceleración por GPU es la causa más común de cierres en PC viejas: arranca apagada (se puede prender desde el menú).
 const useGpu = readConfig().gpu === true;
@@ -222,6 +232,54 @@ async function openChat(phone, paste = false, file = null) {
   if (paste) loading.then(() => pasteWhenReady(log, file));
 }
 
+function showWindow() {
+  if (!win) createWindow({ hidden: false });
+  if (win.isMinimized()) win.restore();
+  win.setSkipTaskbar(false);
+  win.show();
+  win.focus();
+}
+
+function quitForReal() {
+  quitting = true;
+  app.quit();
+}
+
+// El ícono junto al reloj existe solo mientras el segundo plano está activo: es la única forma de volver a abrir la ventana oculta.
+function ensureTray() {
+  if (keepAlive && !tray) {
+    const image = nativeImage.createFromBuffer(fs.readFileSync(path.join(__dirname, 'build', 'icon.png'))).resize({ width: 16, height: 16, quality: 'best' });
+    tray = new Tray(image);
+    tray.setToolTip('WhatsApp Guajardo');
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        { label: 'Abrir WhatsApp', click: showWindow },
+        { label: 'Salir', click: quitForReal },
+      ])
+    );
+    tray.on('click', showWindow);
+    log('ícono de la bandeja creado');
+  } else if (!keepAlive && tray) {
+    tray.destroy();
+    tray = null;
+    log('ícono de la bandeja quitado');
+  }
+}
+
+function setKeepAlive(value) {
+  if (keepAlive === value) return;
+  keepAlive = value;
+  writeConfig({ background: value });
+  log(`segundo plano ${value ? 'activado: al cerrar la ventana el programa sigue corriendo' : 'desactivado: al cerrar la ventana el programa se cierra'}`);
+  ensureTray();
+  buildMenu();
+}
+
+function applyBackgroundArg(argv) {
+  const found = argv.map((arg) => /^--segundo-plano=(si|no)$/.exec(arg)).find(Boolean)?.[1];
+  if (found !== undefined) setKeepAlive(found === 'si');
+}
+
 function askReload(text) {
   if (!win) return;
   const choice = dialog.showMessageBoxSync(win, {
@@ -237,8 +295,10 @@ function askReload(text) {
   else app.quit();
 }
 
-function createWindow() {
+function createWindow({ hidden = false } = {}) {
   win = new BrowserWindow({
+    show: !hidden,
+    skipTaskbar: hidden,
     width: 1100,
     height: 700,
     minWidth: 700,
@@ -246,12 +306,54 @@ function createWindow() {
     title: 'WhatsApp Guajardo',
     icon: path.join(__dirname, 'build', 'icon.ico'),
     backgroundColor: '#111b21',
-    webPreferences: { partition: 'persist:whatsapp', contextIsolation: true, nodeIntegration: false, sandbox: true },
+    // Oculta, el navegador frena las páginas para ahorrar batería: mientras carga por primera vez se lo impide (ver watchReady).
+    webPreferences: { partition: 'persist:whatsapp', contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: !hidden },
   });
   win.webContents.setUserAgent(USER_AGENT);
 
   const wc = win.webContents;
   win.on('page-title-updated', (event) => event.preventDefault());
+  win.on('close', (event) => {
+    if (keepAlive && !quitting) {
+      event.preventDefault();
+      win.hide();
+      log('ventana oculta: WhatsApp sigue corriendo en segundo plano');
+    }
+  });
+  win.on('session-end', () => {
+    quitting = true; // Windows se está apagando o cerrando la sesión: no hay que frenarlo
+  });
+
+  // Cuánto tarda en estar lista: desde que empieza a cargar hasta que se ven los chats (o el QR). Sirve para decidir
+  // si conviene el segundo plano o la precarga en esa PC.
+  let navStart = Date.now();
+  let navId = 0;
+  const seconds = (ms) => (ms / 1000).toFixed(1);
+  const watchReady = async (id) => {
+    const deadline = Date.now() + 10 * 60 * 1000;
+    let qrLogged = false;
+    while (Date.now() < deadline && win && id === navId) {
+      const state = await win.webContents
+        .executeJavaScript("document.querySelector('#pane-side') ? 'chats' : (/Escanea|Vincular/.test(document.body.innerText) ? 'qr' : 'cargando')")
+        .catch(() => 'cargando');
+      if (state === 'chats') {
+        log(`WhatsApp LISTO: se ven los chats a los ${seconds(Date.now() - navStart)} s de empezar a cargar (${seconds(Date.now() - startedAt)} s desde que se abrió el programa)`);
+        if (hidden) win.webContents.setBackgroundThrottling(true); // ya cargó: oculto puede volver a ahorrar recursos
+        return;
+      }
+      if (state === 'qr' && !qrLogged) {
+        log(`WhatsApp pide escanear el QR (a los ${seconds(Date.now() - navStart)} s)`);
+        qrLogged = true;
+      }
+      await sleep(1000);
+    }
+  };
+  win.webContents.on('did-start-navigation', (event, url, isInPlace, isMainFrame) => {
+    if (isMainFrame && !isInPlace) {
+      navStart = Date.now();
+      navId += 1;
+    }
+  });
   wc.on('render-process-gone', (event, details) => {
     log(`ERROR la página se cayó: motivo=${details.reason} código=${details.exitCode}`);
     const why = details.reason === 'oom' ? 'Se quedó sin memoria.' : `Motivo: ${details.reason}.`;
@@ -264,6 +366,7 @@ function createWindow() {
   });
   wc.on('did-finish-load', () => {
     log('página cargada');
+    watchReady(navId);
     // Qué está mostrando WhatsApp (por ejemplo, un aviso de "navegador no compatible")
     setTimeout(async () => {
       try {
@@ -329,9 +432,15 @@ function buildMenu() {
               app.quit();
             },
           },
+          {
+            label: 'Seguir en segundo plano al cerrar la ventana',
+            type: 'checkbox',
+            checked: keepAlive,
+            click: (item) => setKeepAlive(item.checked),
+          },
           { type: 'separator' },
           { label: 'Abrir el registro', click: () => shell.openPath(logFile) },
-          { label: 'Salir', role: 'quit' },
+          { label: 'Salir', click: quitForReal },
         ],
       },
     ])
@@ -343,15 +452,27 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   // Si la aplicación del negocio la vuelve a abrir con otro número, esta misma ventana cambia de chat.
   app.on('second-instance', (event, argv) => {
-    win?.focus();
+    applyBackgroundArg(argv);
     const phone = phoneFromArgs(argv);
-    if (phone) openChat(phone, wantsPaste(argv), fileFromArgs(argv));
+    if (phone) {
+      showWindow(); // por si estaba oculta
+      openChat(phone, wantsPaste(argv), fileFromArgs(argv));
+    } else if (!argv.includes('--oculto')) {
+      showWindow(); // abrir el programa a mano trae la ventana al frente; --oculto (precarga) no toca nada
+    }
+  });
+  app.on('before-quit', () => {
+    quitting = true;
   });
   app.on('child-process-gone', (event, details) => log(`AVISO proceso interno caído: tipo=${details.type} motivo=${details.reason} código=${details.exitCode}`));
   app.whenReady().then(() => {
     log(`--- inicio · Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · ${process.platform} ${process.arch} · GPU ${useGpu ? 'sí' : 'no'} ---`);
+    applyBackgroundArg(process.argv);
+    if (startHidden && !keepAlive) setKeepAlive(true); // oculto sin ícono para volver a abrirlo no serviría
+    ensureTray();
     buildMenu();
-    createWindow();
+    if (startHidden) log('arranca oculto (precarga)');
+    createWindow({ hidden: startHidden });
   });
   app.on('window-all-closed', () => app.quit());
 }
