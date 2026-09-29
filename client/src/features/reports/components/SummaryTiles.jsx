@@ -13,10 +13,12 @@ function Tile({ label, value, note }) {
         sx={{
           my: 0.5,
           fontFamily: (theme) => theme.typography.fontFamily,
-          fontSize: 26,
+          fontSize: 'clamp(18px, 1.6vw, 26px)', // se achica un poco en pantallas chicas para que el importe entre en una línea
           fontWeight: 600,
           lineHeight: 1.3,
-          overflowWrap: 'anywhere',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}
       >
         {value}

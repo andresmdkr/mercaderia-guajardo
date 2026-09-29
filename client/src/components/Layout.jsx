@@ -63,11 +63,11 @@ function NavItem({ section, onNavigate, nested = false }) {
         sx={{
           borderRadius: 2.5,
           mb: 0.5,
-          pl: nested ? 3.5 : 2,
+          pl: nested ? 1.25 : 2,
           '&.Mui-selected': { bgcolor: alpha(color, 0.14), '&:hover': { bgcolor: alpha(color, 0.2) } },
         }}
       >
-        <ListItemIcon sx={{ minWidth: nested ? 34 : 38, color }}>
+        <ListItemIcon sx={{ minWidth: nested ? 30 : 38, color }}>
           <Icon fontSize="small" />
         </ListItemIcon>
         {/* Los subitems van un poco más chicos y en una sola línea ("Actualizar precios" se partía en dos) */}
@@ -79,7 +79,7 @@ function NavItem({ section, onNavigate, nested = false }) {
 
       {hasChildren && (
         <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <List disablePadding>
+          <List disablePadding sx={{ ml: 2.75, mb: 0.5, pl: 0.5, borderLeft: 1, borderColor: 'divider' }}>
             {section.children.map((child) => (
               <NavItem key={child.key} section={child} onNavigate={onNavigate} nested />
             ))}

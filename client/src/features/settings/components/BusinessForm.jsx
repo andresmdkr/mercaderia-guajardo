@@ -57,7 +57,7 @@ export default function BusinessForm({ settings, onSave, onSaved }) {
   );
 
   return (
-    <Paper component="form" onSubmit={handleSubmit} sx={{ p: 3, maxWidth: 560 }}>
+    <Paper component="form" onSubmit={handleSubmit} sx={{ p: 3 }}>
       <Typography variant="h6" gutterBottom>
         Datos del negocio
       </Typography>

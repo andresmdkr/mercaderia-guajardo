@@ -20,6 +20,7 @@ import { getErrorMessage } from '../../../services/api';
 
 const emptyValues = { code: '', name: '', costPrice: '', salePrice: '', minStock: '0', initialStock: '' };
 const filter = createFilterOptions();
+const moneyAdornment = { startAdornment: <InputAdornment position="start">$</InputAdornment> };
 
 function toFormValues(product) {
   if (!product) return emptyValues;
@@ -141,7 +142,7 @@ export default function ProductForm({ product, categories, onCreateCategory, onC
               autoFocus: true,
               placeholder: product ? undefined : 'Escaneá o escribí',
               onKeyDown: handleCodeKeyDown,
-              onFocus: (event) => event.target.select(), // al escanear sobre un código ya escrito, lo reemplaza
+              onFocus: product ? undefined : (event) => event.target.select(), // al crear, escanear reemplaza lo escrito (al editar no se resalta)
               helperText: errors.code ?? (product ? undefined : 'Vacío = automático (P00001…)'),
               slotProps: {
                 input: {
@@ -168,10 +169,10 @@ export default function ProductForm({ product, categories, onCreateCategory, onC
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            {field('costPrice', 'Precio de costo', { type: 'number', slotProps: { htmlInput: { min: 0, step: '0.01' } } })}
+            {field('costPrice', 'Precio de costo', { type: 'number', slotProps: { htmlInput: { min: 0, step: '0.01' }, input: moneyAdornment } })}
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            {field('salePrice', 'Precio de venta', { type: 'number', slotProps: { htmlInput: { min: 0, step: '0.01' } } })}
+            {field('salePrice', 'Precio de venta', { type: 'number', slotProps: { htmlInput: { min: 0, step: '0.01' }, input: moneyAdornment } })}
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             {field('minStock', 'Stock mínimo', { type: 'number', slotProps: { htmlInput: { min: 0, step: 1 } } })}

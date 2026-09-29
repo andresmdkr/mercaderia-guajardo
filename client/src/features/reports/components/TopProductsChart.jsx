@@ -18,7 +18,7 @@ import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, 
 import { formatCompactMoney, formatInteger, formatMoney } from '../../../utils/format';
 
 const ROW_HEIGHT = 40;
-const MAX_LABEL_LENGTH = 24;
+const MAX_LABEL_LENGTH = 34;
 
 const truncate = (text) => (text.length > MAX_LABEL_LENGTH ? `${text.slice(0, MAX_LABEL_LENGTH - 1)}…` : text);
 
@@ -64,7 +64,7 @@ function ChartView({ rows, isRevenue }) {
           <YAxis
             type="category"
             dataKey="label"
-            width={170}
+            width={215}
             tick={{ fill: theme.palette.text.primary, fontSize: 13 }}
             axisLine={{ stroke: theme.palette.divider }}
             tickLine={false}

@@ -17,7 +17,7 @@ export default function SettingsPage() {
     <>
       <PageHeader sectionKey="settings" title="Configuración" />
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 640 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 720 }}>
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
             <CircularProgress />

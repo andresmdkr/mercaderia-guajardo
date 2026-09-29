@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
 import { Alert, Box, Button, Paper, TextField, Typography } from '@mui/material';
+import BrandMark from '../components/BrandMark';
 import Loader from '../components/Loader';
 import SetupForm from '../components/SetupForm';
 import ThemeToggle from '../components/ThemeToggle';
@@ -48,6 +49,7 @@ export default function Login() {
         <ThemeToggle />
       </Box>
       <Paper sx={{ p: 4, width: '100%', maxWidth: 400 }}>
+        <BrandMark />
         {needsSetup ? (
           <SetupForm />
         ) : (

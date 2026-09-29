@@ -73,7 +73,7 @@ export default function CategoriesPage() {
         </Alert>
       )}
 
-      <Paper>
+      <Paper sx={{ maxWidth: 720 }}>
         <TableContainer>
           <Table size="small">
             <TableHead>
