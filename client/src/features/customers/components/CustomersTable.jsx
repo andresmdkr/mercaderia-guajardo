@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Chip,
   IconButton,
@@ -15,9 +16,12 @@ import {
 import NotesIcon from '@mui/icons-material/StickyNote2Outlined';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { whatsappUrl } from '../../../utils/whatsapp';
+import WhatsAppDialog from './WhatsAppDialog';
 
 // Hacer clic en una fila abre el cliente para editarlo (o darlo de baja).
 export default function CustomersTable({ items, total, page, pageSize, onPageChange, onEdit }) {
+  const [whatsappCustomer, setWhatsappCustomer] = useState(null);
+
   return (
     <Paper>
       <TableContainer>
@@ -54,16 +58,15 @@ export default function CustomersTable({ items, total, page, pageSize, onPageCha
                 <TableCell>
                   {customer.phone ?? '—'}
                   {whatsappUrl(customer.phone) && (
-                    <Tooltip title="Abrir WhatsApp">
+                    <Tooltip title="WhatsApp">
                       <IconButton
                         size="small"
                         color="success"
-                        component="a"
-                        href={whatsappUrl(customer.phone)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Abrir WhatsApp de ${customer.name}`}
-                        onClick={(event) => event.stopPropagation()} // no abrir la edición del cliente
+                        aria-label={`WhatsApp de ${customer.name}`}
+                        onClick={(event) => {
+                          event.stopPropagation(); // no abrir la edición del cliente
+                          setWhatsappCustomer(customer);
+                        }}
                         sx={{ ml: 0.5 }}
                       >
                         <WhatsAppIcon fontSize="small" />
@@ -87,6 +90,7 @@ export default function CustomersTable({ items, total, page, pageSize, onPageCha
         onPageChange={(event, newPage) => onPageChange(newPage + 1)}
         labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
       />
+      {whatsappCustomer && <WhatsAppDialog customer={whatsappCustomer} onClose={() => setWhatsappCustomer(null)} />}
     </Paper>
   );
 }
