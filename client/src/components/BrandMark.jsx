@@ -2,13 +2,13 @@ import { Box } from '@mui/material';
 import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
 
 // La "marca" de la app (una caja sobre el color principal, igual al ícono del programa): para las pantallas de entrada.
-export default function BrandMark({ size = 44 }) {
+export default function BrandMark({ size = 44, mb = 2 }) {
   return (
     <Box
       sx={{
         width: size,
         height: size,
-        mb: 2,
+        mb,
         borderRadius: '12px',
         display: 'flex',
         alignItems: 'center',

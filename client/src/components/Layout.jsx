@@ -107,7 +107,7 @@ function SidebarContent({ onNavigate }) {
 
       {/* Pie: quién está usando la app, con el modo claro/oscuro y cerrar sesión a la vista */}
       <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
-        <UserPill />
+        <UserPill onNavigate={onNavigate} />
       </Box>
     </Box>
   );

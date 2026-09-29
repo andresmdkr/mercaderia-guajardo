@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
 import { Alert, Box, Button, Paper, TextField, Typography } from '@mui/material';
-import BrandMark from '../components/BrandMark';
+import BrandTitle from '../components/BrandTitle';
 import Loader from '../components/Loader';
 import SetupForm from '../components/SetupForm';
 import ThemeToggle from '../components/ThemeToggle';
@@ -49,14 +49,11 @@ export default function Login() {
         <ThemeToggle />
       </Box>
       <Paper sx={{ p: 4, width: '100%', maxWidth: 400 }}>
-        <BrandMark />
         {needsSetup ? (
           <SetupForm />
         ) : (
           <form onSubmit={handleSubmit}>
-            <Typography variant="h5" gutterBottom>
-              Mercadería Guajardo
-            </Typography>
+            <BrandTitle>Mercadería Guajardo</BrandTitle>
             <Typography color="text.secondary" sx={{ mb: 2 }}>
               Iniciá sesión para continuar
             </Typography>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Alert, Button, TextField, Typography } from '@mui/material';
 import { setup } from '../redux/sessionSlice';
+import BrandTitle from './BrandTitle';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9._-]{3,50}$/;
 
@@ -58,9 +59,7 @@ export default function SetupForm() {
 
   return (
     <>
-      <Typography variant="h5" gutterBottom>
-        ¡Bienvenido/a!
-      </Typography>
+      <BrandTitle>¡Bienvenido/a!</BrandTitle>
       <Typography color="text.secondary" sx={{ mb: 2 }}>
         Creá el usuario administrador para empezar a usar la aplicación.
       </Typography>

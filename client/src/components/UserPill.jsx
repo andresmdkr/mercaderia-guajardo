@@ -1,5 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { Avatar, Box, Divider, IconButton, Paper, Tooltip, Typography, alpha } from '@mui/material';
+import { NavLink } from 'react-router-dom';
+import { Avatar, ButtonBase, Divider, IconButton, Paper, Tooltip, Typography, alpha } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeIcon from '@mui/icons-material/LightModeOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -18,8 +19,8 @@ const initials = (name = '') =>
 
 // Pie del menú lateral: una píldora en tres partes, todo a la vista y sin abrir nada:
 //   [ avatar + nombre ] | [ modo claro/oscuro ] | [ cerrar sesión ]
-// El nombre puede ocupar dos líneas antes de cortarse.
-export default function UserPill() {
+// Tocar el nombre abre Configuración. El nombre puede ocupar dos líneas antes de cortarse.
+export default function UserPill({ onNavigate }) {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.session.user);
   const { mode, toggleMode } = useThemeMode();
@@ -28,7 +29,14 @@ export default function UserPill() {
 
   return (
     <Paper sx={{ display: 'flex', alignItems: 'stretch', overflow: 'hidden', bgcolor: 'background.paper' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, flexGrow: 1, minWidth: 0 }}>
+      <Tooltip title="Abrir configuración">
+        <ButtonBase
+          component={NavLink}
+          to="/settings"
+          onClick={onNavigate}
+          aria-label="Abrir configuración"
+          sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 1, p: 1, flexGrow: 1, minWidth: 0, textAlign: 'left', '&:hover': { bgcolor: 'action.hover' } }}
+        >
         <Avatar
           sx={(theme) => ({ width: 28, height: 28, fontSize: 11, fontWeight: 700, bgcolor: alpha(theme.palette.primary.main, 0.18), color: 'primary.main' })}
         >
@@ -50,7 +58,8 @@ export default function UserPill() {
         >
           {user?.name}
         </Typography>
-      </Box>
+        </ButtonBase>
+      </Tooltip>
       <Divider orientation="vertical" flexItem />
       <Tooltip title={themeTitle}>
         <IconButton onClick={toggleMode} aria-label={themeTitle} sx={{ borderRadius: 0, width: 40 }}>
