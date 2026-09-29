@@ -30,6 +30,12 @@ async function prepareDatabase() {
 async function startServer({ port = 3001, host } = {}) {
   await sequelize.authenticate();
   await prepareDatabase();
+  // Modo de prueba (lo define la app de escritorio): una base vacía se llena con datos de ejemplo.
+  // Si ya tiene usuarios (la demo ya estaba cargada), no toca nada.
+  if (process.env.APP_MODE === 'demo') {
+    const summary = await require('./utils/demoData').populateDemo();
+    if (summary) console.log(`Modo de prueba: datos de ejemplo cargados (${summary.products} productos, ${summary.sales} ventas)`);
+  }
   return new Promise((resolve, reject) => {
     const server = app.listen(port, host, () => {
       server.removeListener('error', reject);

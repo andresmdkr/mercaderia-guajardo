@@ -14,21 +14,43 @@ const SERVER_SRC = path.join(__dirname, '..', 'app', 'server', 'src');
 const CLIENT_DIST = path.join(__dirname, '..', 'app', 'client', 'dist');
 const MIGRATIONS = path.join(__dirname, '..', 'app', 'server', 'migrations');
 
-const state = { origin: null, dataDir: null, backupsDir: null, dbFile: null };
+const state = { origin: null, dataDir: null, backupsDir: null, dbFile: null, mode: 'real' };
 
-// La clave que firma las sesiones se inventa la primera vez y queda guardada junto a los datos.
-function loadSecret(dataDir) {
-  const file = path.join(dataDir, 'config.json');
+// config.json guarda la clave que firma las sesiones y el modo de la app ('demo' = modo de prueba).
+function readConfig(dataDir) {
   try {
-    const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (typeof saved.jwtSecret === 'string' && saved.jwtSecret.length >= 32) return saved.jwtSecret;
+    return JSON.parse(fs.readFileSync(path.join(dataDir, 'config.json'), 'utf8'));
   } catch {
-    // primera vez, o archivo ilegible: se crea uno nuevo (las sesiones abiertas se cierran, nada más)
+    return {}; // primera vez, o archivo ilegible: se toma como vacío
   }
-  const jwtSecret = crypto.randomBytes(48).toString('hex');
-  fs.writeFileSync(file, JSON.stringify({ jwtSecret }, null, 2));
-  return jwtSecret;
 }
+
+function writeConfig(dataDir, changes) {
+  fs.writeFileSync(path.join(dataDir, 'config.json'), JSON.stringify({ ...readConfig(dataDir), ...changes }, null, 2));
+}
+
+// La clave se inventa la primera vez y queda guardada junto a los datos. Cada modo tiene la suya: una sesión abierta
+// en la demo no vale en los datos reales (ni al revés), aunque los dos tengan un usuario con el mismo id.
+function loadSecret(dataDir, mode) {
+  const key = mode === 'demo' ? 'demoJwtSecret' : 'jwtSecret';
+  const saved = readConfig(dataDir)[key];
+  if (typeof saved === 'string' && saved.length >= 32) return saved; // si no, las sesiones abiertas se cierran, nada más
+  const secret = crypto.randomBytes(48).toString('hex');
+  writeConfig(dataDir, { [key]: secret });
+  return secret;
+}
+
+// Los datos reales y los de la demo viven en archivos y carpetas de copias distintos: entrar o salir del modo
+// de prueba nunca puede pisar los datos del negocio.
+function locations(dataDir, mode) {
+  return mode === 'demo'
+    ? { dbFile: path.join(dataDir, 'demo.sqlite'), backupsDir: path.join(dataDir, 'Copias de seguridad (prueba)') }
+    : { dbFile: path.join(dataDir, 'mercaderia.sqlite'), backupsDir: path.join(dataDir, 'Copias de seguridad') };
+}
+
+const removeDatabaseFiles = (dbFile) => {
+  for (const suffix of ['', '-wal', '-shm', '-journal']) fs.rmSync(dbFile + suffix, { force: true });
+};
 
 function isPortFree(port) {
   return new Promise((resolve) => {
@@ -51,8 +73,8 @@ async function start({ dataDir, appVersion, log }) {
   const port = await findPort();
 
   state.dataDir = dataDir;
-  state.dbFile = path.join(dataDir, 'mercaderia.sqlite');
-  state.backupsDir = path.join(dataDir, 'Copias de seguridad');
+  state.mode = readConfig(dataDir).mode === 'demo' ? 'demo' : 'real';
+  Object.assign(state, locations(dataDir, state.mode));
   state.origin = `http://${HOST}:${port}`;
 
   Object.assign(process.env, {
@@ -64,7 +86,8 @@ async function start({ dataDir, appVersion, log }) {
     CLIENT_URL: state.origin,
     COOKIE_SECURE: 'false', // la conexión es local (http), una cookie "Secure" no viajaría
     APP_VERSION: appVersion,
-    JWT_SECRET: loadSecret(dataDir),
+    APP_MODE: state.mode === 'demo' ? 'demo' : '',
+    JWT_SECRET: loadSecret(dataDir, state.mode),
   });
 
   const { startServer } = require(path.join(SERVER_SRC, 'server.js'));
@@ -72,6 +95,8 @@ async function start({ dataDir, appVersion, log }) {
   log(`servidor local en ${state.origin} · base ${state.dbFile}`);
 
   // Una copia por día: al abrir la aplicación, si la última tiene más de 20 horas. Si falla, se sigue igual.
+  // (En la demo no: son datos de ejemplo y se regeneran cuando se quiere.)
+  if (state.mode === 'demo') return { server, origin: state.origin, port };
   try {
     const { backupIfDue } = require(path.join(SERVER_SRC, 'utils', 'backupTools.js'));
     const { sequelize } = require(path.join(SERVER_SRC, 'db.js'));
@@ -107,6 +132,57 @@ async function restoreBackup(name, log) {
   }
 }
 
+// Entra al modo de prueba (o lo reinicia si ya estaba): cierra la base, borra la demo anterior y deja el modo
+// guardado. La demo se vuelve a armar al arrancar. Quien llama tiene que reiniciar la aplicación.
+async function enterDemo(log) {
+  try {
+    await close();
+    const { dbFile } = locations(state.dataDir, 'demo');
+    removeDatabaseFiles(dbFile);
+    writeConfig(state.dataDir, { mode: 'demo' });
+    log('modo de prueba: activado');
+    return { ok: true };
+  } catch (error) {
+    log(`ERROR al entrar al modo de prueba: ${error.stack || error}`);
+    return { ok: false, message: error.message };
+  }
+}
+
+// Marca de tiempo local de los nombres de backup: 2026-09-29_21-54-03
+function backupStamp(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
+}
+
+// Sale del modo de prueba. Con fresh = true además aparta los datos reales como una copia
+// ("antes-de-empezar-de-cero", restaurable desde Configuración) para que la app arranque vacía.
+// Sin fresh, los datos reales no se tocan. Quien llama tiene que reiniciar la aplicación.
+async function exitDemo({ fresh }, log) {
+  try {
+    await close();
+    if (fresh) {
+      const real = locations(state.dataDir, 'real');
+      const wal = real.dbFile + '-wal';
+      if (fs.existsSync(wal) && fs.statSync(wal).size > 0) {
+        return { ok: false, message: 'La base real quedó a medio cerrar. Salí y volvé a abrir la aplicación sin la demo antes de empezar de cero.' };
+      }
+      if (fs.existsSync(real.dbFile)) {
+        fs.mkdirSync(real.backupsDir, { recursive: true });
+        const saved = path.join(real.backupsDir, `mercaderia_${backupStamp()}_antes-de-empezar-de-cero.sqlite`);
+        fs.renameSync(real.dbFile, saved);
+        removeDatabaseFiles(real.dbFile); // restos vacíos (-wal, -shm)
+        log(`empezar de cero: datos reales guardados en ${saved}`);
+      }
+    }
+    writeConfig(state.dataDir, { mode: 'real' });
+    log(`modo de prueba: desactivado (empezar de cero: ${Boolean(fresh)})`);
+    return { ok: true };
+  } catch (error) {
+    log(`ERROR al salir del modo de prueba: ${error.stack || error}`);
+    return { ok: false, message: error.message };
+  }
+}
+
 // Cierra la base ordenadamente. Salir con la base abierta hace caer al módulo nativo de SQLite al terminar el proceso.
 async function close() {
   if (!state.origin) return;
@@ -119,4 +195,4 @@ async function close() {
 
 const getState = () => ({ ...state });
 
-module.exports = { start, restoreBackup, close, getState };
+module.exports = { start, restoreBackup, enterDemo, exitDemo, close, getState };

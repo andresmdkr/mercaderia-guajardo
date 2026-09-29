@@ -4,6 +4,8 @@
 // Lo que ofrece window.desktop:
 //   openBackupsFolder()          abre la carpeta de las copias de seguridad
 //   restoreBackup(name)          restaura una copia y reinicia la app → { ok, message }
+//   enterDemo()                  activa el modo de prueba (base con datos de ejemplo) y reinicia la app → { ok, message }
+//   exitDemo(fresh)              sale del modo de prueba y reinicia; con fresh = true aparta los datos reales y arranca vacía → { ok, message }
 //   getUpdateStatus()            estado del actualizador → { status, message }
 //   checkForUpdates()            busca actualizaciones (el avance llega por onUpdateStatus)
 //   installUpdate()              instala la actualización descargada y reinicia

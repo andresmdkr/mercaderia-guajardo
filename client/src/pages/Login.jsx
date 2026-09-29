@@ -7,15 +7,20 @@ import Loader from '../components/Loader';
 import SetupForm from '../components/SetupForm';
 import ThemeToggle from '../components/ThemeToggle';
 import { login } from '../redux/sessionSlice';
+import useDemoMode from '../features/settings/hooks/useDemoMode';
 import { fetchSetupStatus } from '../services/authService';
 
 export default function Login() {
   const dispatch = useDispatch();
   const status = useSelector((state) => state.session.status);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  // null = todavía no escribió nada: en modo de prueba se ofrece el usuario de la demo ya escrito
+  const [typedUsername, setUsername] = useState(null);
+  const [typedPassword, setPassword] = useState(null);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const demo = useDemoMode();
+  const username = typedUsername ?? (demo ? 'demo' : '');
+  const password = typedPassword ?? (demo ? 'demo1234' : '');
   // null = todavía consultando; true = la app no tiene usuarios y hay que crear el primero
   const [needsSetup, setNeedsSetup] = useState(null);
 
@@ -57,6 +62,11 @@ export default function Login() {
             <Typography color="text.secondary" sx={{ mb: 2 }}>
               Iniciá sesión para continuar
             </Typography>
+            {demo && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Modo de prueba: usuario <strong>demo</strong>, contraseña <strong>demo1234</strong>.
+              </Alert>
+            )}
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}

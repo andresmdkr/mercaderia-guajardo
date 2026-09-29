@@ -2,7 +2,7 @@ import api from '../../../services/api';
 
 export const fetchBusinessSettings = () => api.get('/settings/business').then((res) => res.data);
 
-// Versión de la aplicación: { version }
+// Versión de la aplicación y modo: { version, demo }
 export const fetchAppVersion = () => api.get('/version').then((res) => res.data);
 
 // Copias de seguridad: { folder, items: [{ name, size, createdAt, kind }] }

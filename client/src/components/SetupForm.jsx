@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Alert, Button, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import EnterDemoButton from '../features/settings/components/EnterDemoButton';
 import { setup } from '../redux/sessionSlice';
 import BrandTitle from './BrandTitle';
 
@@ -77,6 +78,10 @@ export default function SetupForm() {
           Crear usuario y empezar
         </Button>
       </form>
+      {/* Solo en la app instalada: para mostrarla a alguien antes de crear el usuario real */}
+      <Box sx={{ mt: 2, textAlign: 'center' }}>
+        <EnterDemoButton label="Probar con datos de ejemplo" variant="text" />
+      </Box>
     </>
   );
 }

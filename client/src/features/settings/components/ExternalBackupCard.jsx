@@ -5,6 +5,7 @@ import { getErrorMessage } from '../../../services/api';
 import { desktop } from '../../../services/desktop';
 import { formatDateTime } from '../../../utils/format';
 import { externalWarningText } from '../backupWarnings';
+import useDemoMode from '../hooks/useDemoMode';
 
 // Copia externa (opcional): cada copia de seguridad se guarda también en otra carpeta (pendrive o nube).
 // Es una recomendación: si no se configura, solo se muestra una advertencia.
@@ -12,6 +13,7 @@ export default function ExternalBackupCard({ external, onChange, onMessage }) {
   const [typedFolder, setTypedFolder] = useState('');
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const demo = useDemoMode();
 
   const apply = async (folder) => {
     setSaving(true);
@@ -32,7 +34,8 @@ export default function ExternalBackupCard({ external, onChange, onMessage }) {
     if (!result.canceled && result.folder) apply(result.folder);
   };
 
-  const warning = externalWarningText(external);
+  // En la demo no tiene sentido advertir de la copia externa (son datos de ejemplo)
+  const warning = demo ? null : externalWarningText(external);
 
   return (
     <Box sx={{ mt: 3, pt: 2.5, borderTop: 1, borderColor: 'divider' }}>

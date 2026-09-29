@@ -8,6 +8,7 @@ import RecentSalesCard from '../features/home/components/RecentSalesCard';
 import useHomeData from '../features/home/hooks/useHomeData';
 import SummaryTiles from '../features/reports/components/SummaryTiles';
 import ExternalBackupWarning from '../features/settings/components/ExternalBackupWarning';
+import useDemoMode from '../features/settings/hooks/useDemoMode';
 
 const todayLabel = () => new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
@@ -60,6 +61,7 @@ function NewSaleCard() {
 export default function Home() {
   const user = useSelector((state) => state.session.user);
   const { summary, sales, lowStock, loading } = useHomeData();
+  const demo = useDemoMode();
 
   return (
     <>
@@ -70,7 +72,8 @@ export default function Home() {
         {todayLabel()}
       </Typography>
 
-      <ExternalBackupWarning />
+      {/* En la demo no tiene sentido pedir una copia externa */}
+      {demo === false && <ExternalBackupWarning />}
 
       <NewSaleCard />
 

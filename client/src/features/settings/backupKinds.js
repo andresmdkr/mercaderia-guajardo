@@ -4,4 +4,5 @@ export const BACKUP_KINDS = {
   automatico: { label: 'Automática', color: 'success' },
   'antes-de-migrar': { label: 'Antes de actualizar', color: 'info' },
   'antes-de-restaurar': { label: 'Antes de restaurar', color: 'warning' },
+  'antes-de-empezar-de-cero': { label: 'Antes de empezar de cero', color: 'warning' },
 };

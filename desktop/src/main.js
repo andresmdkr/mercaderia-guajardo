@@ -137,6 +137,19 @@ function registerIpc() {
     return result;
   });
 
+  // Modo de prueba: la app se reinicia con otra base (la demo, o de nuevo la real).
+  handle('desktop:enter-demo', async () => {
+    const result = await appServer.enterDemo(log);
+    if (result.ok) setTimeout(relaunch, 300);
+    return result;
+  });
+
+  handle('desktop:exit-demo', async (fresh) => {
+    const result = await appServer.exitDemo({ fresh: fresh === true }, log);
+    if (result.ok) setTimeout(relaunch, 300);
+    return result;
+  });
+
   handle('desktop:get-update-status', () => updates.getStatus());
   handle('desktop:check-for-updates', () => updates.check());
   handle('desktop:install-update', () => updates.install());

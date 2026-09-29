@@ -5,6 +5,7 @@ import AboutCard from '../components/AboutCard';
 import BackupsCard from '../components/BackupsCard';
 import BusinessForm from '../components/BusinessForm';
 import ChangePasswordForm from '../components/ChangePasswordForm';
+import DemoModeCard from '../components/DemoModeCard';
 import useAppVersion from '../hooks/useAppVersion';
 import useBusinessSettings from '../hooks/useBusinessSettings';
 
@@ -30,6 +31,7 @@ export default function SettingsPage() {
 
         <ChangePasswordForm onChanged={() => setMessage('Contraseña actualizada')} />
         <AboutCard version={version} onMessage={setMessage} />
+        <DemoModeCard />
         </Box>
 
         <BackupsCard onMessage={setMessage} />

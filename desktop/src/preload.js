@@ -7,6 +7,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('desktop', {
   openBackupsFolder: () => ipcRenderer.invoke('desktop:open-backups-folder'),
   restoreBackup: (name) => ipcRenderer.invoke('desktop:restore-backup', String(name)),
+  enterDemo: () => ipcRenderer.invoke('desktop:enter-demo'),
+  exitDemo: (fresh) => ipcRenderer.invoke('desktop:exit-demo', fresh === true),
   getUpdateStatus: () => ipcRenderer.invoke('desktop:get-update-status'),
   checkForUpdates: () => ipcRenderer.invoke('desktop:check-for-updates'),
   installUpdate: () => ipcRenderer.invoke('desktop:install-update'),

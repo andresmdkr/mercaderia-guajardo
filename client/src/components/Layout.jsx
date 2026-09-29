@@ -19,6 +19,7 @@ import {
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCartOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
 import { menuItems, settingsMenuItem } from '../theme/sections';
+import DemoBanner from './DemoBanner';
 import SectionTabs from './SectionTabs';
 import UserPill from './UserPill';
 
@@ -163,6 +164,7 @@ export default function Layout() {
       <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 2, md: 4 } }}>
         <Toolbar sx={{ display: { md: 'none' } }} />
         <Container maxWidth="lg" disableGutters>
+          <DemoBanner />
           <SectionTabs />
           {/* Cada pantalla aparece con un fundido corto (solo opacidad y 4 px de movimiento: liviano para PC vieja) */}
           <Box
