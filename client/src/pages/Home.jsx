@@ -2,30 +2,16 @@ import { useSelector } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Grid, Paper, Typography, alpha, useTheme } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCartOutlined';
+import LowStockCard from '../features/home/components/LowStockCard';
+import QuickLinks from '../features/home/components/QuickLinks';
+import RecentSalesCard from '../features/home/components/RecentSalesCard';
+import useHomeData from '../features/home/hooks/useHomeData';
+import SummaryTiles from '../features/reports/components/SummaryTiles';
 import ExternalBackupWarning from '../features/settings/components/ExternalBackupWarning';
-import { flatSections } from '../theme/sections';
 
-function IconBox({ icon: Icon, color, size = 44 }) {
-  return (
-    <Box
-      sx={{
-        width: size,
-        height: size,
-        flexShrink: 0,
-        borderRadius: 2.5,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color,
-        bgcolor: alpha(color, 0.14),
-      }}
-    >
-      <Icon />
-    </Box>
-  );
-}
+const todayLabel = () => new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
-// Ventas es lo más importante: tarjeta grande y destacada.
+// Ventas es lo más importante: tarjeta destacada, siempre a mano.
 function NewSaleCard() {
   const theme = useTheme();
   const color = theme.palette.sections.sales;
@@ -37,10 +23,10 @@ function NewSaleCard() {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 3,
+        gap: 2.5,
         flexWrap: 'wrap',
-        p: 3,
-        mb: 3,
+        p: 2.5,
+        mb: 4,
         color: 'inherit',
         textDecoration: 'none',
         borderColor: color,
@@ -49,7 +35,9 @@ function NewSaleCard() {
         '&:hover': { bgcolor: alpha(color, 0.13) },
       }}
     >
-      <IconBox icon={AddShoppingCartIcon} color={color} size={56} />
+      <Box sx={{ display: 'flex', p: 1.5, borderRadius: 2.5, color, bgcolor: alpha(color, 0.14) }}>
+        <AddShoppingCartIcon />
+      </Box>
       <Box sx={{ flexGrow: 1, minWidth: 200 }}>
         <Typography variant="h5" component="h2">
           Nueva venta
@@ -68,62 +56,39 @@ function NewSaleCard() {
   );
 }
 
-function SectionCard({ section }) {
-  const theme = useTheme();
-  const color = theme.palette.sections[section.key];
-
-  return (
-    <Paper
-      component={RouterLink}
-      to={section.path}
-      sx={{
-        display: 'block',
-        p: 3,
-        height: '100%',
-        color: 'inherit',
-        textDecoration: 'none',
-        transition: 'border-color 0.15s, transform 0.15s',
-        '&:hover': { borderColor: color, transform: 'translateY(-2px)' },
-      }}
-    >
-      <Box sx={{ mb: 2 }}>
-        <IconBox icon={section.icon} color={color} />
-      </Box>
-      <Typography variant="h6" gutterBottom>
-        {section.label}
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {section.description}
-      </Typography>
-    </Paper>
-  );
-}
-
+// Inicio: cómo viene el día (lo vendido hoy, las últimas ventas y lo que hay que reponer) y accesos a todas las pantallas.
 export default function Home() {
   const user = useSelector((state) => state.session.user);
+  const { summary, sales, lowStock, loading } = useHomeData();
 
   return (
     <>
       <Typography variant="h4" component="h1" gutterBottom>
         Hola, {user?.name}
       </Typography>
-      <Typography color="text.secondary" sx={{ mb: 4 }}>
-        ¿Qué querés hacer hoy?
+      <Typography color="text.secondary" sx={{ mb: 3, '&::first-letter': { textTransform: 'uppercase' } }}>
+        {todayLabel()}
       </Typography>
 
       <ExternalBackupWarning />
 
       <NewSaleCard />
 
-      <Grid container spacing={2}>
-        {flatSections
-          .filter((section) => section.key !== 'home')
-          .map((section) => (
-            <Grid key={section.key} size={{ xs: 12, sm: 6, md: 4 }}>
-              <SectionCard section={section} />
-            </Grid>
-          ))}
+      <Typography variant="h6" sx={{ mb: 1.5 }}>
+        Hoy
+      </Typography>
+      <SummaryTiles summary={summary} loading={loading} />
+
+      <Grid container spacing={2} sx={{ mt: 1, mb: 4 }}>
+        <Grid size={{ xs: 12, md: 7 }}>
+          <RecentSalesCard sales={sales} />
+        </Grid>
+        <Grid size={{ xs: 12, md: 5 }}>
+          <LowStockCard lowStock={lowStock} />
+        </Grid>
       </Grid>
+
+      <QuickLinks />
     </>
   );
 }
