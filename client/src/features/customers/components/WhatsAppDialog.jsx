@@ -24,7 +24,9 @@ export default function WhatsAppDialog({ customer, onClose }) {
           Abrir en esta computadora
         </Button>
         <Box sx={{ flexGrow: 1 }} />
-        <Button onClick={onClose}>Cerrar</Button>
+        <Button color="inherit" onClick={onClose}>
+          Cerrar
+        </Button>
       </DialogActions>
     </Dialog>
   );

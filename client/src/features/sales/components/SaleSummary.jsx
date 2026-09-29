@@ -9,6 +9,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
+  alpha,
 } from '@mui/material';
 import CustomerPicker from '../../customers/components/CustomerPicker';
 import { formatMoney } from '../../../utils/format';
@@ -107,7 +108,10 @@ export default function SaleSummary({
             <Typography color="error.main">− {formatMoney(centsToMoney(totals.discountCents))}</Typography>
           </Row>
         )}
-        <Row label="Total" sx={{ mt: 1 }}>
+        <Row
+          label="Total"
+          sx={{ mt: 1, px: 2, py: 1.25, borderRadius: 2.5, bgcolor: (theme) => alpha(theme.palette.sections.sales, 0.16) }}
+        >
           <Typography
             component="p"
             sx={{

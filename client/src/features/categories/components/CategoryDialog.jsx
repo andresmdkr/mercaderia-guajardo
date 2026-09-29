@@ -36,7 +36,7 @@ export default function CategoryDialog({ category, onClose, onSubmit }) {
         <TextField label="Nombre" value={name} onChange={(event) => setName(event.target.value)} fullWidth autoFocus margin="dense" />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={saving}>
+        <Button color="inherit" onClick={onClose} disabled={saving}>
           Cancelar
         </Button>
         <Button type="submit" variant="contained" disabled={saving}>

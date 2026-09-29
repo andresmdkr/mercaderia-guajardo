@@ -8,7 +8,9 @@ export default function ConfirmDialog({ title, message, confirmLabel = 'Confirma
         <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>Cancelar</Button>
+        <Button color="inherit" onClick={onCancel}>
+          Cancelar
+        </Button>
         <Button onClick={onConfirm} color="error" variant="contained">
           {confirmLabel}
         </Button>

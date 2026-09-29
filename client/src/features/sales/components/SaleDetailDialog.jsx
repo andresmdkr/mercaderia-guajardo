@@ -155,7 +155,9 @@ export default function SaleDetailDialog({ saleId, onClose, onChanged }) {
             Comprobante PDF
           </Button>
           <PrintReceiptButton sale={sale} business={business.settings} />
-          <Button onClick={onClose}>Cerrar</Button>
+          <Button color="inherit" onClick={onClose}>
+            Cerrar
+          </Button>
         </DialogActions>
       </Dialog>
 

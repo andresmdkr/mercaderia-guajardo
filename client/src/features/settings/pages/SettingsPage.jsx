@@ -17,7 +17,9 @@ export default function SettingsPage() {
     <>
       <PageHeader sectionKey="settings" title="Configuración" />
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 720 }}>
+      {/* Pantalla ancha: datos y contraseña a la izquierda, copias de seguridad a la derecha. Angosta: una debajo de otra. */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'repeat(2, minmax(0, 1fr))' }, gap: 3, alignItems: 'start' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
             <CircularProgress />
@@ -26,9 +28,11 @@ export default function SettingsPage() {
         {error && <Alert severity="error">{error}</Alert>}
         {settings && <BusinessForm settings={settings} onSave={save} onSaved={() => setMessage('Datos guardados')} />}
 
-        <BackupsCard onMessage={setMessage} />
         <ChangePasswordForm onChanged={() => setMessage('Contraseña actualizada')} />
         <AboutCard version={version} onMessage={setMessage} />
+        </Box>
+
+        <BackupsCard onMessage={setMessage} />
       </Box>
 
       <Snackbar open={Boolean(message)} autoHideDuration={3500} onClose={() => setMessage(null)}>

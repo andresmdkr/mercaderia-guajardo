@@ -1,4 +1,5 @@
 import {
+  Box,
   IconButton,
   Paper,
   Table,
@@ -16,7 +17,12 @@ import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { formatMoney } from '../../../utils/format';
 
+// Los botones − y + tienen borde para que se vean como botones (antes eran solo un símbolo gris)
+const stepperSx = { border: 1, borderColor: 'divider', borderRadius: 1.5, mx: 0.5, '&.Mui-disabled': { borderColor: 'transparent' } };
+
 export default function CartTable({ lines, onQuantityChange, onRemove }) {
+  const units = lines.reduce((sum, line) => sum + line.quantity, 0);
+
   return (
     <Paper>
       <TableContainer>
@@ -50,7 +56,7 @@ export default function CartTable({ lines, onQuantityChange, onRemove }) {
                 </TableCell>
                 <TableCell align="right">{formatMoney(product.salePrice)}</TableCell>
                 <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
-                  <IconButton size="small" disabled={quantity <= 1} onClick={() => onQuantityChange(product.id, quantity - 1)}>
+                  <IconButton size="small" color="inherit" sx={stepperSx} disabled={quantity <= 1} onClick={() => onQuantityChange(product.id, quantity - 1)}>
                     <RemoveIcon fontSize="small" />
                   </IconButton>
                   <TextField
@@ -65,6 +71,8 @@ export default function CartTable({ lines, onQuantityChange, onRemove }) {
                     <span>
                       <IconButton
                         size="small"
+                        color="inherit"
+                        sx={stepperSx}
                         disabled={quantity >= product.stock}
                         onClick={() => onQuantityChange(product.id, quantity + 1)}
                       >
@@ -88,6 +96,13 @@ export default function CartTable({ lines, onQuantityChange, onRemove }) {
           </TableBody>
         </Table>
       </TableContainer>
+      {lines.length > 0 && (
+        <Box sx={{ px: 2, py: 1.25, borderTop: 1, borderColor: 'divider', color: 'text.secondary' }}>
+          <Typography variant="body2">
+            {lines.length} {lines.length === 1 ? 'producto' : 'productos'} · {units} {units === 1 ? 'unidad' : 'unidades'}
+          </Typography>
+        </Box>
+      )}
     </Paper>
   );
 }

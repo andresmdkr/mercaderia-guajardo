@@ -105,7 +105,7 @@ export default function CustomerForm({ customer, onClose, onSubmit, onToggleActi
             <Box sx={{ flexGrow: 1 }} />
           </>
         )}
-        <Button onClick={onClose} disabled={saving}>
+        <Button color="inherit" onClick={onClose} disabled={saving}>
           Cancelar
         </Button>
         <Button type="submit" variant="contained" disabled={saving}>

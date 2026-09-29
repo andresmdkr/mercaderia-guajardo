@@ -11,6 +11,7 @@ export default function ProductPicker({
   autoFocus = false,
   inputRef, // para poder devolverle el cursor desde afuera
   clearOnSelect = false, // para "agregar y seguir": limpia el campo después de elegir
+  size = 'small',
   sx,
 }) {
   const [inputValue, setInputValue] = useState('');
@@ -34,7 +35,7 @@ export default function ProductPicker({
       filterOptions={(items) => items} // ya vienen filtrados desde el backend
       noOptionsText="No se encontraron productos"
       loadingText="Buscando…"
-      size="small"
+      size={size}
       sx={sx}
       renderOption={({ key, ...props }, product) => (
         <Box component="li" key={key} {...props} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>

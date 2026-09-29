@@ -155,7 +155,7 @@ export default function MovementForm({ onClose, onSubmit }) {
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={saving}>
+        <Button color="inherit" onClick={onClose} disabled={saving}>
           Cancelar
         </Button>
         <Button type="submit" variant="contained" disabled={saving}>

@@ -104,7 +104,7 @@ export default function CategoriesPage() {
                       </IconButton>
                     </Tooltip>
                     <Tooltip title={category.productCount > 0 ? 'Tiene productos, no se puede eliminar' : 'Eliminar'}>
-                      <span>
+                      <span tabIndex={category.productCount > 0 ? 0 : undefined} style={{ display: 'inline-block' }}>
                         <IconButton size="small" disabled={category.productCount > 0} onClick={() => setDeleting(category)}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>

@@ -89,10 +89,11 @@ export default function NewSalePage() {
                   inputRef={searchInputRef}
                   autoFocus
                   clearOnSelect
+                  size="medium"
                 />
               </Box>
               <Box sx={{ flex: '1 1 220px' }}>
-                <CodeEntry onSubmit={sale.addByCode} inputRef={codeInputRef} />
+                <CodeEntry onSubmit={sale.addByCode} inputRef={codeInputRef} size="medium" />
               </Box>
             </Box>
             {sale.entryError && (

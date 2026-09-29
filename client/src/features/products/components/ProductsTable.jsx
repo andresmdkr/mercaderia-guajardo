@@ -8,6 +8,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  alpha,
 } from '@mui/material';
 import TableEmptyRow from '../../../components/TableEmptyRow';
 import SortableHeaderCell from '../../../components/SortableHeaderCell';
@@ -58,7 +59,7 @@ export default function ProductsTable({ items, total, page, pageSize, onPageChan
                 tabIndex={0}
                 onClick={() => onEdit(product)}
                 onKeyDown={onEnter(() => onEdit(product))}
-                sx={{ cursor: 'pointer' }}
+                sx={[{ cursor: 'pointer' }, product.stock === 0 && ((theme) => ({ bgcolor: alpha(theme.palette.error.main, 0.07) }))]}
               >
                 <TableCell>{product.code}</TableCell>
                 <TableCell>
@@ -72,7 +73,7 @@ export default function ProductsTable({ items, total, page, pageSize, onPageChan
                   <Chip
                     size="small"
                     label={product.stock}
-                    color={product.stock <= product.minStock ? 'error' : 'default'}
+                    color={product.stock === 0 ? 'error' : product.stock <= product.minStock ? 'warning' : 'default'}
                   />
                 </TableCell>
                 <TableCell align="right">{product.minStock}</TableCell>

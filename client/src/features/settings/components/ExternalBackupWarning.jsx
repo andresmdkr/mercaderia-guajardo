@@ -33,7 +33,7 @@ export default function ExternalBackupWarning() {
     };
   }, []);
 
-  const text = externalWarningText(external);
+  const text = externalWarningText(external, { short: true });
   if (!text || hidden) return null;
 
   const dismiss = () => {
@@ -48,7 +48,8 @@ export default function ExternalBackupWarning() {
   return (
     <Alert
       severity="warning"
-      sx={{ mb: 3 }}
+      // Franja fina: el aviso no tiene que empujar el resto de la pantalla hacia abajo
+      sx={{ mb: 2.5, py: 0, alignItems: 'center', '& .MuiAlert-message': { py: 0.75, fontSize: 13 }, '& .MuiAlert-icon': { py: 0.75, fontSize: 20 }, '& .MuiAlert-action': { py: 0.25 } }}
       action={
         <>
           <Button color="inherit" size="small" component={RouterLink} to="/settings" sx={{ whiteSpace: 'nowrap' }}>

@@ -204,7 +204,7 @@ export default function ProductForm({ product, categories, onCreateCategory, onC
             <Box sx={{ flexGrow: 1 }} />
           </>
         )}
-        <Button onClick={onClose} disabled={saving}>
+        <Button color="inherit" onClick={onClose} disabled={saving}>
           Cancelar
         </Button>
         <Button type="submit" variant="contained" disabled={saving}>
