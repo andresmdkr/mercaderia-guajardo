@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, Box, Button, CircularProgress, MenuItem, Snackbar, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import ClearFiltersButton from '../../../components/ClearFiltersButton';
 import PageHeader from '../../../components/PageHeader';
 import ProductPicker from '../../products/components/ProductPicker';
 import { createMovement } from '../api/stockApi';
@@ -73,6 +74,7 @@ export default function StockPage() {
           onChange={(event) => movements.setFilter('to', event.target.value)}
           {...dateFieldProps}
         />
+        <ClearFiltersButton visible={movements.hasActiveFilters} onClick={movements.clearFilters} />
       </Box>
 
       {movements.error && (

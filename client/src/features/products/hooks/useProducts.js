@@ -73,6 +73,17 @@ export default function useProducts() {
     setPage(1);
   };
 
+  // "Limpiar filtros": todo vuelve a como se abre la pantalla (la búsqueda se limpia al instante, sin esperar el retardo).
+  const hasActiveFilters = Boolean(search.trim() || categoryId || lowStock || showInactive);
+  const clearFilters = () => {
+    setSearchText('');
+    setDebouncedSearch('');
+    setCategoryIdFilter('');
+    setLowStockFilter(false);
+    setShowInactiveFilter(false);
+    setPage(1);
+  };
+
   const reload = useCallback(() => setReloadKey((key) => key + 1), []);
 
   return {
@@ -86,6 +97,8 @@ export default function useProducts() {
     categoryId,
     lowStock,
     showInactive,
+    hasActiveFilters,
+    clearFilters,
     setSearch: setSearchText,
     setCategoryId,
     setLowStock,

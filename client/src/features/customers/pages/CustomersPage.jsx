@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, Box, Button, CircularProgress, InputAdornment, Snackbar, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import ClearFiltersButton from '../../../components/ClearFiltersButton';
 import PageHeader from '../../../components/PageHeader';
 import StatusFilter from '../../../components/StatusFilter';
 import { getErrorMessage } from '../../../services/api';
@@ -74,6 +75,7 @@ export default function CustomersPage() {
           }}
         />
         <StatusFilter showInactive={customers.showInactive} onChange={customers.setShowInactive} />
+        <ClearFiltersButton visible={customers.hasActiveFilters} onClick={customers.clearFilters} />
       </Box>
 
       {customers.error && (

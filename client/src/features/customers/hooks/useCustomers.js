@@ -59,6 +59,14 @@ export default function useCustomers() {
     setPage(1);
   };
 
+  const hasActiveFilters = Boolean(search.trim() || showInactive);
+  const clearFilters = () => {
+    setSearchText('');
+    setDebouncedSearch('');
+    setShowInactiveFilter(false);
+    setPage(1);
+  };
+
   const reload = useCallback(() => setReloadKey((key) => key + 1), []);
 
   return {
@@ -70,6 +78,8 @@ export default function useCustomers() {
     error,
     search,
     showInactive,
+    hasActiveFilters,
+    clearFilters,
     setSearch: setSearchText,
     setShowInactive,
     setPage,

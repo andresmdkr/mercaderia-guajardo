@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Alert, Box, Button, Chip, CircularProgress, MenuItem, Snackbar, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import ClearFiltersButton from '../../../components/ClearFiltersButton';
 import PageHeader from '../../../components/PageHeader';
 import CustomerPicker from '../../customers/components/CustomerPicker';
 import SaleDetailDialog from '../components/SaleDetailDialog';
@@ -97,6 +98,7 @@ export default function SalesPage() {
         <Box sx={{ width: 260, bgcolor: 'background.paper' }}>
           <CustomerPicker value={sales.filters.customer} onChange={(customer) => sales.setFilter('customer', customer)} />
         </Box>
+        <ClearFiltersButton visible={sales.hasActiveFilters} onClick={sales.clearFilters} />
       </Box>
 
       {sales.error && (

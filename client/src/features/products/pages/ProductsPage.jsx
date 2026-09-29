@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import ClearFiltersButton from '../../../components/ClearFiltersButton';
 import PageHeader from '../../../components/PageHeader';
 import StatusFilter from '../../../components/StatusFilter';
 import { getErrorMessage } from '../../../services/api';
@@ -114,6 +115,7 @@ export default function ProductsPage() {
           label="Solo stock bajo"
         />
         <StatusFilter showInactive={products.showInactive} onChange={products.setShowInactive} />
+        <ClearFiltersButton visible={products.hasActiveFilters} onClick={products.clearFilters} />
       </Box>
 
       {products.error && (

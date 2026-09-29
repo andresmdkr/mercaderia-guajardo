@@ -4,9 +4,11 @@ import { fetchMovements } from '../api/stockApi';
 
 const PAGE_SIZE = 20;
 
+const emptyFilters = { product: null, type: '', from: '', to: '' };
+
 // Listado de movimientos con filtros (producto, tipo, rango de fechas) y paginación.
 export default function useMovements() {
-  const [filters, setFilters] = useState({ product: null, type: '', from: '', to: '' });
+  const [filters, setFilters] = useState(emptyFilters);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -50,6 +52,12 @@ export default function useMovements() {
     setPage(1);
   };
 
+  const hasActiveFilters = Boolean(filters.product || filters.type || filters.from || filters.to);
+  const clearFilters = () => {
+    setFilters(emptyFilters);
+    setPage(1);
+  };
+
   const reload = useCallback(() => setReloadKey((key) => key + 1), []);
 
   return {
@@ -60,6 +68,8 @@ export default function useMovements() {
     loading,
     error,
     filters,
+    hasActiveFilters,
+    clearFilters,
     setFilter,
     setPage,
     reload,

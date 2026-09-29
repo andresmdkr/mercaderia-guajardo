@@ -5,15 +5,18 @@ import { fetchSales } from '../api/salesApi';
 
 const PAGE_SIZE = 20;
 
+// Cómo se abre la pantalla: las ventas de hoy, sin otros filtros.
+const defaultFilters = () => ({
+  preset: 'today',
+  ...presetRange('today'),
+  status: '',
+  paymentMethod: '',
+  customer: null,
+});
+
 // Listado de ventas con filtros (período, estado, medio de pago, cliente) y paginación.
 export default function useSales() {
-  const [filters, setFilters] = useState(() => ({
-    preset: 'today',
-    ...presetRange('today'),
-    status: '',
-    paymentMethod: '',
-    customer: null,
-  }));
+  const [filters, setFilters] = useState(defaultFilters);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -69,6 +72,12 @@ export default function useSales() {
     setPage(1);
   };
 
+  const hasActiveFilters = filters.preset !== 'today' || Boolean(filters.status || filters.paymentMethod || filters.customer);
+  const clearFilters = () => {
+    setFilters(defaultFilters());
+    setPage(1);
+  };
+
   const reload = useCallback(() => setReloadKey((key) => key + 1), []);
 
   return {
@@ -79,6 +88,8 @@ export default function useSales() {
     loading,
     error,
     filters,
+    hasActiveFilters,
+    clearFilters,
     setFilter,
     setPreset,
     setDate,
