@@ -1,5 +1,5 @@
 'use strict';
-// Prueba aparte: abre WhatsApp Web en una ventana de Electron 22 (32 bits), pensada para la PC vieja del negocio
+// WhatsApp Guajardo: abre WhatsApp Web en una ventana de Electron 22 (32 bits), pensada para la PC vieja del negocio
 // (Windows 8.1, 1,5 GB de RAM). No usa nada de la aplicación principal. Si la página se cae, anota por qué
 // (memoria, motivo del cierre, texto que mostraba) en "registro-wsp.txt" para poder diagnosticarlo.
 
@@ -9,12 +9,25 @@ const os = require('node:os');
 const path = require('node:path');
 
 const WHATSAPP_URL = 'https://web.whatsapp.com/';
-// La aplicación del negocio la puede abrir con un número: WhatsAppPrueba.exe --telefono=5491155551234
+// La aplicación del negocio la puede abrir con un número: WhatsAppGuajardo.exe --telefono=5491155551234
 const phoneFromArgs = (argv) => argv.map((arg) => /^--telefono=(\d{8,15})$/.exec(arg)).find(Boolean)?.[1] ?? null;
 // WhatsApp Web rechaza navegadores que considera viejos; Electron 22 trae Chromium 108. Se presenta como uno más nuevo.
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 const userData = app.getPath('userData');
+
+// Antes se llamaba "whatsapp-prueba": si quedó la carpeta de datos vieja y la nueva todavía no tiene sesión, se copia
+// su contenido, así el QR ya escaneado no se pierde con el cambio de nombre. (Electron crea la carpeta nueva vacía antes
+// de llegar acá, por eso se mira si tiene sesión y no si existe.) Si algo falla se sigue igual: solo habría que escanear el QR.
+try {
+  const oldData = path.join(app.getPath('appData'), 'whatsapp-prueba');
+  if (fs.existsSync(oldData) && !fs.existsSync(path.join(userData, 'Partitions'))) {
+    fs.cpSync(oldData, userData, { recursive: true, force: false });
+    fs.rmSync(oldData, { recursive: true, force: true });
+  }
+} catch {
+  // se empieza de cero
+}
 const logFile = path.join(userData, 'registro-wsp.txt');
 const configFile = path.join(userData, 'config-wsp.json');
 
@@ -51,7 +64,7 @@ function log(message) {
   try {
     fs.appendFileSync(logFile, line);
   } catch {
-    // sin registro: la prueba sigue igual
+    // sin registro: el programa sigue igual
   }
 }
 
@@ -139,13 +152,15 @@ function createWindow() {
     height: 700,
     minWidth: 700,
     minHeight: 500,
-    title: 'WhatsApp (prueba)',
+    title: 'WhatsApp Guajardo',
+    icon: path.join(__dirname, 'build', 'icon.ico'),
     backgroundColor: '#111b21',
     webPreferences: { partition: 'persist:whatsapp', contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   win.webContents.setUserAgent(USER_AGENT);
 
   const wc = win.webContents;
+  win.on('page-title-updated', (event) => event.preventDefault());
   wc.on('render-process-gone', (event, details) => {
     log(`ERROR la página se cayó: motivo=${details.reason} código=${details.exitCode}`);
     const why = details.reason === 'oom' ? 'Se quedó sin memoria.' : `Motivo: ${details.reason}.`;
@@ -179,11 +194,11 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // Título con la memoria: para ver cuánto usa mientras se prueba.
+  // Título con la memoria: para ver cuánto usa (en una PC con poca RAM sirve saberlo).
   const timer = setInterval(() => {
     if (!win) return;
     const m = memorySnapshot();
-    win.setTitle(`WhatsApp (prueba) · usa ${m.appMB} MB · libres ${m.freeMB} MB`);
+    win.setTitle(`WhatsApp Guajardo · usa ${m.appMB} MB · libres ${m.freeMB} MB`);
   }, 4000);
   // Una línea en el registro cada minuto: si se cierra sola, se ve cómo venía la memoria.
   const logTimer = setInterval(() => log('latido'), 60000);
@@ -201,7 +216,7 @@ function buildMenu() {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
-        label: 'Prueba',
+        label: 'Opciones',
         submenu: [
           { label: 'Recargar', accelerator: 'F5', click: () => win?.webContents.reload() },
           {

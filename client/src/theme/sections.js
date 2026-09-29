@@ -116,7 +116,20 @@ export const menuItems = [
   { key: 'reports', label: 'Reportes', path: '/reports', prefix: '/reports', icon: AssessmentIcon },
 ];
 
-export const settingsMenuItem = { key: 'settings', label: 'Configuración', path: '/settings', prefix: '/settings', icon: SettingsIcon };
+// Configuración se divide en pestañas. Las marcadas desktopOnly solo tienen algo que mostrar en la app instalada.
+export const settingsMenuItem = {
+  key: 'settings',
+  label: 'Configuración',
+  path: '/settings',
+  prefix: '/settings',
+  icon: SettingsIcon,
+  tabs: [
+    { label: 'Negocio', path: '/settings' },
+    { label: 'Copias de seguridad', path: '/settings/backups' },
+    { label: 'WhatsApp', path: '/settings/whatsapp', desktopOnly: true },
+    { label: 'Aplicación', path: '/settings/app' },
+  ],
+};
 
 // Lista plana (secciones + subsecciones), para buscar por key o armar la portada.
 export const flatSections = sections.flatMap((section) => [section, ...(section.children ?? [])]);

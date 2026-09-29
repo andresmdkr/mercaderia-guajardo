@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Alert, Box, Button, Paper, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, TextField } from '@mui/material';
+import StorefrontIcon from '@mui/icons-material/StorefrontOutlined';
 import { getErrorMessage } from '../../../services/api';
+import SettingsCard from './SettingsCard';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -57,13 +59,13 @@ export default function BusinessForm({ settings, onSave, onSaved }) {
   );
 
   return (
-    <Paper component="form" onSubmit={handleSubmit} sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Datos del negocio
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Aparecen en el encabezado de los comprobantes en PDF.
-      </Typography>
+    <SettingsCard
+      component="form"
+      onSubmit={handleSubmit}
+      icon={StorefrontIcon}
+      title="Datos del negocio"
+      description="Aparecen en el encabezado de los comprobantes en PDF."
+    >
 
       {serverError && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -71,17 +73,17 @@ export default function BusinessForm({ settings, onSave, onSaved }) {
         </Alert>
       )}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {field('name', 'Nombre del negocio', { autoFocus: true })}
-        {field('address', 'Dirección')}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, gap: 2 }}>
+        <Box sx={{ gridColumn: { sm: '1 / -1' } }}>{field('name', 'Nombre del negocio', { autoFocus: true })}</Box>
+        <Box sx={{ gridColumn: { sm: '1 / -1' } }}>{field('address', 'Dirección')}</Box>
         {field('phone', 'Teléfono')}
         {field('email', 'Email', { type: 'email' })}
-        <Box>
+        <Box sx={{ gridColumn: { sm: '1 / -1' } }}>
           <Button type="submit" variant="contained" disabled={saving}>
             Guardar cambios
           </Button>
         </Box>
       </Box>
-    </Paper>
+    </SettingsCard>
   );
 }

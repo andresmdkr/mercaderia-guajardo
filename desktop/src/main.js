@@ -10,6 +10,7 @@ const { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, shell } = require(
 const appServer = require('./appServer');
 const diagnostics = require('./diagnostics');
 const { printInChildProcess, runPrintJob } = require('./print');
+const receiptShare = require('./receiptShare');
 const updates = require('./updates');
 const whatsapp = require('./whatsapp');
 
@@ -171,6 +172,28 @@ function registerIpc() {
     if (mode === 'program') return whatsapp.openWithProgram(program, url, { log });
     return whatsapp.open(url, { icon: ICON, log });
   });
+  // Enviar un comprobante por WhatsApp: se guarda el PDF, se deja copiado como archivo y se abre el chat (por donde
+  // esté configurado). Con la ventana propia se pega solo; con las otras opciones hay que pegarlo con Ctrl+V.
+  handle('desktop:share-whatsapp-file', async ({ url, filename, base64 } = {}) => {
+    if (!whatsapp.parsePhone(url)) return { ok: false, message: 'Enlace de WhatsApp no válido' };
+    let file;
+    try {
+      file = receiptShare.saveReceipt(path.join(appServer.getState().dataDir, 'Comprobantes'), filename, base64);
+    } catch (error) {
+      return { ok: false, message: error.message };
+    }
+    const copy = await receiptShare.copyFileToClipboard(file);
+    if (!copy.ok) log(`WhatsApp: no se pudo copiar el comprobante al portapapeles: ${copy.message}`);
+    const { mode, program } = whatsappSettings();
+    let opened = { ok: true };
+    if (mode === 'browser') shell.openExternal(url);
+    else if (mode === 'program') opened = whatsapp.openWithProgram(program, url, { log });
+    else opened = await whatsapp.open(url, { icon: ICON, log }, { paste: copy.ok });
+    // Si no se pudo dejar copiado, se muestra el archivo en su carpeta para arrastrarlo al chat.
+    if (!copy.ok) shell.showItemInFolder(file);
+    return { ok: opened.ok, message: opened.message, mode, copied: copy.ok, autoPaste: mode === 'integrated' && copy.ok };
+  });
+
   handle('desktop:get-whatsapp-settings', () => whatsappSettings());
   handle('desktop:set-whatsapp-mode', (mode) => {
     if (!['integrated', 'browser', 'program'].includes(mode)) return { ok: false };

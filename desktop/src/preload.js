@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('desktop', {
   enterDemo: () => ipcRenderer.invoke('desktop:enter-demo'),
   exitDemo: (fresh) => ipcRenderer.invoke('desktop:exit-demo', fresh === true),
   openWhatsapp: (url) => ipcRenderer.invoke('desktop:open-whatsapp', String(url)),
+  shareWhatsappFile: (payload) => ipcRenderer.invoke('desktop:share-whatsapp-file', payload),
   getWhatsappSettings: () => ipcRenderer.invoke('desktop:get-whatsapp-settings'),
   chooseWhatsappProgram: () => ipcRenderer.invoke('desktop:choose-whatsapp-program'),
   setWhatsappMode: (mode) => ipcRenderer.invoke('desktop:set-whatsapp-mode', String(mode)),

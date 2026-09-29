@@ -144,7 +144,7 @@ function create({ icon, log }) {
 
 // Abre (o trae al frente) la ventana de WhatsApp en el chat de ese número. Devuelve { ok, message }.
 // Si la ventana ya estaba abierta con la sesión iniciada, cambia de chat sin recargar; si no, carga el chat.
-async function open(url, { icon, log }) {
+async function open(url, { icon, log }, { paste = false } = {}) {
   const phone = parsePhone(url);
   if (!phone) return { ok: false, message: 'Enlace de WhatsApp no válido' };
   if (probing) return { ok: true }; // ya está cambiando de chat: un segundo toque no tiene que pisarlo
@@ -160,7 +160,10 @@ async function open(url, { icon, log }) {
   if (existed && !contents.isLoading() && contents.getURL().startsWith(HOST)) {
     probing = true;
     try {
-      if (await openInPage(phone, log)) return { ok: true };
+      if (await openInPage(phone, log)) {
+        if (paste) pasteWhenReady(log); // sin esperarlo: la pantalla no tiene que quedar bloqueada
+        return { ok: true };
+      }
     } finally {
       probing = false;
     }
@@ -169,7 +172,8 @@ async function open(url, { icon, log }) {
 
   log(`WhatsApp: carga el chat (ventana ${existed ? 'ya abierta' : 'nueva'})`);
   openedChat = null;
-  win.webContents.loadURL(`${HOST}/send?phone=${phone}`);
+  const loading = win.webContents.loadURL(`${HOST}/send?phone=${phone}`).catch(() => {});
+  if (paste) loading.then(() => pasteWhenReady(log));
   return { ok: true };
 }
 
@@ -207,6 +211,25 @@ function openWithProgram(program, url, { log }) {
   } catch (error) {
     return fallback(error.message);
   }
+}
+
+// Pega lo que hay en el portapapeles (el comprobante, copiado como archivo) en el chat abierto. Espera a que el chat
+// esté listo (aparece el campo para escribir). Si no llega a abrirse, el usuario lo pega a mano con Ctrl+V.
+async function pasteWhenReady(log) {
+  const deadline = Date.now() + 45000;
+  while (Date.now() < deadline && isOpen()) {
+    const ready = await win.webContents.executeJavaScript("Boolean(document.querySelector('#main footer'))").catch(() => false);
+    if (ready) {
+      await sleep(700); // deja que WhatsApp termine de acomodar el chat y le dé el foco al campo
+      if (!isOpen()) return;
+      win.webContents.focus();
+      win.webContents.paste();
+      log('WhatsApp: comprobante pegado en el chat');
+      return;
+    }
+    await sleep(500);
+  }
+  log('WhatsApp: no se pegó solo el comprobante (el chat no llegó a abrirse)');
 }
 
 function close() {

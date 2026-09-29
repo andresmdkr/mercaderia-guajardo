@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Alert, Box, Button, Paper, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, TextField } from '@mui/material';
+import LockIcon from '@mui/icons-material/LockOutlined';
 import { getErrorMessage } from '../../../services/api';
+import SettingsCard from './SettingsCard';
 import { changePasswordRequest } from '../../../services/authService';
 
 const emptyValues = { current: '', next: '', repeat: '' };
@@ -58,13 +60,14 @@ export default function ChangePasswordForm({ onChanged }) {
   );
 
   return (
-    <Paper component="form" onSubmit={handleSubmit} noValidate sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Cambiar contraseña
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Usá una contraseña que no uses en otros lados. Tu sesión sigue abierta después de cambiarla.
-      </Typography>
+    <SettingsCard
+      component="form"
+      onSubmit={handleSubmit}
+      noValidate
+      icon={LockIcon}
+      title="Cambiar contraseña"
+      description="Usá una contraseña que no uses en otros lados. Tu sesión sigue abierta después de cambiarla."
+    >
 
       {serverError && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -72,16 +75,16 @@ export default function ChangePasswordForm({ onChanged }) {
         </Alert>
       )}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {field('current', 'Contraseña actual')}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, gap: 2 }}>
+        <Box sx={{ gridColumn: { sm: '1 / -1' } }}>{field('current', 'Contraseña actual')}</Box>
         {field('next', 'Contraseña nueva')}
         {field('repeat', 'Repetir contraseña nueva')}
-        <Box>
+        <Box sx={{ gridColumn: { sm: '1 / -1' } }}>
           <Button type="submit" variant="contained" disabled={saving}>
             Cambiar contraseña
           </Button>
         </Box>
       </Box>
-    </Paper>
+    </SettingsCard>
   );
 }

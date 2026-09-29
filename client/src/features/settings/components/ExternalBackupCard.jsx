@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import SaveIcon from '@mui/icons-material/SaveAltOutlined';
 import FolderIcon from '@mui/icons-material/CreateNewFolderOutlined';
 import { getErrorMessage } from '../../../services/api';
 import { desktop } from '../../../services/desktop';
 import { formatDateTime } from '../../../utils/format';
 import { externalWarningText } from '../backupWarnings';
 import useDemoMode from '../hooks/useDemoMode';
+import SettingsCard from './SettingsCard';
 
 // Copia externa (opcional): cada copia de seguridad se guarda también en otra carpeta (pendrive o nube).
 // Es una recomendación: si no se configura, solo se muestra una advertencia.
@@ -38,14 +40,11 @@ export default function ExternalBackupCard({ external, onChange, onMessage }) {
   const warning = demo ? null : externalWarningText(external);
 
   return (
-    <Box sx={{ mt: 3, pt: 2.5, borderTop: 1, borderColor: 'divider' }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-        Copia externa (recomendada)
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        Además de guardarse en esta computadora, cada copia se guarda en otra carpeta: un pendrive, o la carpeta de Google Drive o
-        Dropbox si la tienen instalada. Si el disco de esta PC falla, tu información sigue a salvo. Es opcional.
-      </Typography>
+    <SettingsCard
+      icon={SaveIcon}
+      title="Copia externa (recomendada)"
+      description="Además de guardarse en esta computadora, cada copia se guarda en otra carpeta: un pendrive, o la carpeta de Google Drive o Dropbox. Si el disco de esta PC falla, tu información sigue a salvo. Es opcional."
+    >
 
       {warning && (
         <Alert severity="warning" sx={{ mb: 1.5 }}>
@@ -91,6 +90,6 @@ export default function ExternalBackupCard({ external, onChange, onMessage }) {
           </Button>
         )}
       </Box>
-    </Box>
+    </SettingsCard>
   );
 }

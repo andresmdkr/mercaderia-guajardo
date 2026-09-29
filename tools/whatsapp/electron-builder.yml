@@ -1,9 +1,9 @@
-# Prueba aparte de la aplicación principal: WhatsApp Web en un programa de 32 bits que no se instala.
+# WhatsApp Guajardo: WhatsApp Web en un programa aparte de la aplicación principal, de 32 bits, que no se instala.
 # Dos formas: un .exe portátil (un solo archivo, pero se descomprime en cada apertura: lento) y un .zip con la carpeta
 # (se descomprime una vez y abre al instante: es la que sirve para que la aplicación del negocio la abra con un número).
-# Se arma desde la carpeta desktop (ya tiene electron-builder):  npm run wsp-test
-appId: com.mercaderiaguajardo.wsptest
-productName: WhatsApp Prueba
+# Se arma desde la carpeta desktop (ya tiene electron-builder):  npm run whatsapp
+appId: com.mercaderiaguajardo.whatsapp
+productName: WhatsApp Guajardo
 electronVersion: 22.3.27
 
 directories:
@@ -12,12 +12,14 @@ directories:
 files:
   - package.json
   - main.js
+  - build/icon.ico
 
 asar: true
 npmRebuild: false
 
 win:
-  executableName: WhatsAppPrueba
+  icon: build/icon.ico
+  executableName: WhatsAppGuajardo
   target:
     - target: portable
       arch:
@@ -27,8 +29,8 @@ win:
         - ia32
 
 portable:
-  artifactName: WhatsAppPrueba-${version}.exe
+  artifactName: WhatsAppGuajardo-${version}.exe
 
-artifactName: WhatsAppPrueba-${version}-carpeta.${ext}
+artifactName: WhatsAppGuajardo-${version}-carpeta.${ext}
 
 publish: null

@@ -5,7 +5,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -23,6 +22,7 @@ import { formatBytes, formatDateTime } from '../../../utils/format';
 import { BACKUP_KINDS } from '../backupKinds';
 import ExternalBackupCard from './ExternalBackupCard';
 import useBackups from '../hooks/useBackups';
+import SettingsCard from './SettingsCard';
 
 export default function BackupsCard({ onMessage }) {
   const { folder, items, external, loading, creating, error, create, setExternalFolder } = useBackups();
@@ -43,14 +43,12 @@ export default function BackupsCard({ onMessage }) {
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Copias de seguridad
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Una copia de toda tu información. Se hace una automática por día al abrir la aplicación y se guardan las últimas 30.
-        Podés copiar la carpeta a un pendrive para tenerla también fuera de esta computadora.
-      </Typography>
+    <>
+    <SettingsCard
+      icon={BackupIcon}
+      title="Copias de seguridad"
+      description="Una copia de toda tu información. Se hace una automática por día al abrir la aplicación y se guardan las últimas 30."
+    >
 
       {(error || restoreError) && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -117,8 +115,6 @@ export default function BackupsCard({ onMessage }) {
         </Table>
       </TableContainer>
 
-      <ExternalBackupCard external={external} onChange={setExternalFolder} onMessage={onMessage} />
-
       {restoring && (
         <ConfirmDialog
           title="Restaurar esta copia"
@@ -128,6 +124,9 @@ export default function BackupsCard({ onMessage }) {
           onCancel={() => setRestoring(null)}
         />
       )}
-    </Paper>
+    </SettingsCard>
+
+    <ExternalBackupCard external={external} onChange={setExternalFolder} onMessage={onMessage} />
+    </>
   );
 }

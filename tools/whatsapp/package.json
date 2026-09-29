@@ -1,0 +1,9 @@
+{
+  "name": "whatsapp-guajardo",
+  "version": "0.3.0",
+  "description": "WhatsApp Web en un programa aparte (Electron 22, 32 bits), liviano, para la PC del negocio",
+  "main": "main.js",
+  "private": true,
+  "productName": "WhatsApp Guajardo",
+  "author": "Mercadería Guajardo"
+}

@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Box, Button, Paper, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
+import ScienceIcon from '@mui/icons-material/ScienceOutlined';
 import { desktop } from '../../../services/desktop';
 import useDemoMode from '../hooks/useDemoMode';
 import DemoExitDialog from './DemoExitDialog';
 import EnterDemoButton from './EnterDemoButton';
+import SettingsCard from './SettingsCard';
 
 // Modo de prueba: mostrar la app con datos de ejemplo sin tocar los datos reales. Solo en la app instalada.
 export default function DemoModeCard() {
@@ -13,15 +15,19 @@ export default function DemoModeCard() {
   if (!desktop || demo === null) return null;
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Modo de prueba
-      </Typography>
+    <SettingsCard
+      icon={ScienceIcon}
+      title="Modo de prueba"
+      description={
+        demo
+          ? 'Estás usando datos de ejemplo: no se mezclan con los reales.'
+          : 'Para mostrar la aplicación a un cliente: se reinicia con productos, clientes y ventas de ejemplo.'
+      }
+    >
       {demo ? (
         <>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Estás en modo de prueba: los datos son de ejemplo y no se mezclan con los reales. Para dejar la demo como al
-            principio podés reiniciarla.
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Podés reiniciar la demo para dejarla como al principio, o salir y volver a tus datos.
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             <Button variant="contained" onClick={() => setExiting(true)}>
@@ -33,13 +39,12 @@ export default function DemoModeCard() {
         </>
       ) : (
         <>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Para mostrar la aplicación a un cliente: se reinicia con productos, clientes y ventas de ejemplo. Tus datos
-            reales no se tocan y podés volver cuando quieras (o empezar de cero).
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Tus datos reales no se tocan y podés volver cuando quieras (o empezar de cero).
           </Typography>
           <EnterDemoButton />
         </>
       )}
-    </Paper>
+    </SettingsCard>
   );
 }
