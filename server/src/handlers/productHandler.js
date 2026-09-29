@@ -4,6 +4,9 @@ const { parseBool, parseId, toPositiveInt } = require('../utils/parse');
 const { parseSorting } = require('../utils/sorting');
 
 const MAX_LIMIT = 100;
+// Topes razonables: más allá, los números pierden precisión (o son un error de tipeo).
+const MAX_PRICE = 100_000_000; // pesos
+const MAX_STOCK = 9_999_999; // unidades
 
 // Valida el body de alta / edición y devuelve solo los campos permitidos.
 // Al crear, el código puede venir vacío: entonces el sistema le asigna el siguiente (ver productController.create).
@@ -28,9 +31,9 @@ function validateProductBody(body, { codeOptional = false } = {}) {
   const salePrice = Number(body.salePrice);
   const minStock = Number(body.minStock ?? 0);
 
-  if (!Number.isFinite(costPrice) || costPrice < 0) throw new AppError('El precio de costo debe ser un número mayor o igual a 0');
-  if (!Number.isFinite(salePrice) || salePrice < 0) throw new AppError('El precio de venta debe ser un número mayor o igual a 0');
-  if (!Number.isInteger(minStock) || minStock < 0) throw new AppError('El stock mínimo debe ser un entero mayor o igual a 0');
+  if (!Number.isFinite(costPrice) || costPrice < 0 || costPrice > MAX_PRICE) throw new AppError(`El precio de costo debe ser un número entre 0 y ${MAX_PRICE}`);
+  if (!Number.isFinite(salePrice) || salePrice < 0 || salePrice > MAX_PRICE) throw new AppError(`El precio de venta debe ser un número entre 0 y ${MAX_PRICE}`);
+  if (!Number.isInteger(minStock) || minStock < 0 || minStock > MAX_STOCK) throw new AppError(`El stock mínimo debe ser un entero entre 0 y ${MAX_STOCK}`);
 
   return {
     code,
@@ -71,7 +74,7 @@ async function getById(req, res, next) {
 function parseInitialStock(value) {
   if (value === undefined || value === null || value === '') return 0;
   const n = Number(value);
-  if (!Number.isInteger(n) || n < 0) throw new AppError('El stock inicial debe ser un entero mayor o igual a 0');
+  if (!Number.isInteger(n) || n < 0 || n > MAX_STOCK) throw new AppError(`El stock inicial debe ser un entero entre 0 y ${MAX_STOCK}`);
   return n;
 }
 

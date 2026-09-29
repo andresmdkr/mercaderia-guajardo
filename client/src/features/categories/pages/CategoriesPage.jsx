@@ -99,13 +99,18 @@ export default function CategoriesPage() {
                   <TableCell align="right">{category.productCount}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Renombrar">
-                      <IconButton size="small" onClick={() => setEditing(category)}>
+                      <IconButton size="small" aria-label={`Renombrar la categoría ${category.name}`} onClick={() => setEditing(category)}>
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title={category.productCount > 0 ? 'Tiene productos, no se puede eliminar' : 'Eliminar'}>
                       <span tabIndex={category.productCount > 0 ? 0 : undefined} style={{ display: 'inline-block' }}>
-                        <IconButton size="small" disabled={category.productCount > 0} onClick={() => setDeleting(category)}>
+                        <IconButton
+                          size="small"
+                          aria-label={`Eliminar la categoría ${category.name}`}
+                          disabled={category.productCount > 0}
+                          onClick={() => setDeleting(category)}
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </span>

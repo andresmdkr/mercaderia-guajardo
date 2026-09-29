@@ -36,7 +36,7 @@ export default function ReportsPage() {
         <SummaryTiles summary={report.summary} loading={report.loading} />
         <TopProductsChart rows={report.topProducts} sort={sort} onSortChange={setSort} loading={report.loading} />
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3, alignItems: 'start' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'repeat(2, minmax(0, 1fr))' }, gap: 3, alignItems: 'start' }}>
           <PaymentMethodsCard rows={report.paymentMethods} loading={report.loading} />
           <TopCustomersTable data={report.topCustomers} loading={report.loading} />
         </Box>

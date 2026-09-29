@@ -77,11 +77,18 @@ async function nextAutoCode(transaction) {
 // El stock no se escribe directo: arranca en 0 y, si hay stock inicial, entra como un
 // movimiento (dentro de la misma transacción, así o se crea todo o nada).
 // Si no viene código, se le asigna uno automático.
+// El código es único sin importar mayúsculas: el lector de códigos busca sin distinguirlas, y "C1" y "c1" serían ambiguos.
+async function assertCodeFree(code, exceptId, transaction) {
+  const existing = await Product.findOne({ where: where(fn('LOWER', col('code')), code.toLowerCase()), transaction });
+  if (existing && existing.id !== exceptId) throw new AppError('Ya existe un producto con ese código', 409);
+}
+
 async function create(data, { initialStock = 0, userId } = {}) {
   await assertCategoryExists(data.categoryId);
 
   const productId = await sequelize.transaction(async (transaction) => {
     const code = data.code || (await nextAutoCode(transaction));
+    await assertCodeFree(code, null, transaction);
     const product = await Product.create({ ...data, code }, { transaction });
     if (initialStock > 0) {
       await applyMovement(
@@ -98,7 +105,10 @@ async function create(data, { initialStock = 0, userId } = {}) {
 async function update(id, data) {
   const product = await getById(id);
   await assertCategoryExists(data.categoryId);
-  await product.update(data);
+  await sequelize.transaction(async (transaction) => {
+    await assertCodeFree(data.code, id, transaction);
+    await product.update(data, { transaction });
+  });
   return getById(id);
 }
 
