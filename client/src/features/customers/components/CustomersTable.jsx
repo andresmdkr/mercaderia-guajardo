@@ -1,5 +1,6 @@
 import {
   Chip,
+  IconButton,
   Paper,
   Table,
   TableBody,
@@ -12,6 +13,8 @@ import {
   Typography,
 } from '@mui/material';
 import NotesIcon from '@mui/icons-material/StickyNote2Outlined';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import { whatsappUrl } from '../../../utils/whatsapp';
 
 // Hacer clic en una fila abre el cliente para editarlo (o darlo de baja).
 export default function CustomersTable({ items, total, page, pageSize, onPageChange, onEdit }) {
@@ -48,7 +51,26 @@ export default function CustomersTable({ items, total, page, pageSize, onPageCha
                     </Tooltip>
                   )}
                 </TableCell>
-                <TableCell>{customer.phone ?? '—'}</TableCell>
+                <TableCell>
+                  {customer.phone ?? '—'}
+                  {whatsappUrl(customer.phone) && (
+                    <Tooltip title="Abrir WhatsApp">
+                      <IconButton
+                        size="small"
+                        color="success"
+                        component="a"
+                        href={whatsappUrl(customer.phone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Abrir WhatsApp de ${customer.name}`}
+                        onClick={(event) => event.stopPropagation()} // no abrir la edición del cliente
+                        sx={{ ml: 0.5 }}
+                      >
+                        <WhatsAppIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </TableCell>
                 <TableCell>{customer.email ?? '—'}</TableCell>
                 <TableCell>{customer.address ?? '—'}</TableCell>
               </TableRow>
