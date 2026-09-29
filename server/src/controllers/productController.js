@@ -1,6 +1,7 @@
 const { Op, col, fn, where } = require('sequelize');
 const { sequelize, Category, Product } = require('../db');
 const AppError = require('../utils/AppError');
+const { searchCondition } = require('../utils/searchText');
 const { applyMovement } = require('./stockController');
 
 const includeCategory = [{ model: Category, as: 'category', attributes: ['id', 'name'] }];
@@ -8,12 +9,8 @@ const includeCategory = [{ model: Category, as: 'category', attributes: ['id', '
 async function list({ page, limit, search, categoryId, lowStock, active }) {
   const conditions = [];
 
-  if (search) {
-    conditions.push({
-      // en SQLite LIKE ignora mayúsculas (solo letras sin tilde)
-      [Op.or]: [{ name: { [Op.like]: `%${search}%` } }, { code: { [Op.like]: `%${search}%` } }],
-    });
-  }
+  // Ignora mayúsculas y tildes. Las columnas van calificadas porque la consulta también une la tabla de categorías.
+  if (search) conditions.push(searchCondition(['"Product"."name"', '"Product"."code"'], search));
   if (categoryId) conditions.push({ categoryId });
   if (active !== undefined) conditions.push({ active });
   if (lowStock) conditions.push(where(col('stock'), Op.lte, col('min_stock')));

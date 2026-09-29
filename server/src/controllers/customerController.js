@@ -1,14 +1,13 @@
 const { Op, literal, where } = require('sequelize');
 const { Customer } = require('../db');
 const AppError = require('../utils/AppError');
+const { searchCondition } = require('../utils/searchText');
 
 async function list({ page, limit, search, active }) {
   const conditions = [];
 
-  if (search) {
-    const like = { [Op.like]: `%${search}%` }; // en SQLite LIKE ignora mayúsculas (solo letras sin tilde)
-    conditions.push({ [Op.or]: [{ name: like }, { phone: like }, { email: like }] });
-  }
+  // Ignora mayúsculas y tildes (nombre, teléfono y email).
+  if (search) conditions.push(searchCondition(['"Customer"."name"', '"Customer"."phone"', '"Customer"."email"'], search));
   if (active !== undefined) conditions.push({ active });
 
   const { rows, count } = await Customer.findAndCountAll({

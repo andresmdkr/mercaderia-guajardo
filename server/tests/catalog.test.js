@@ -71,6 +71,28 @@ describe('catálogo', () => {
       assert.equal((await api.get('/api/products/by-code/PBAJA')).status, 409, 'un producto de baja no se puede vender');
     });
 
+    it('busca sin distinguir mayúsculas ni tildes, en cualquier dirección', async () => {
+      await api.post('/api/products', { code: 'T1', name: 'Café Molido', costPrice: 1, salePrice: 2 });
+      await api.post('/api/products', { code: 'T2', name: 'ÁRBOL de Navidad', costPrice: 1, salePrice: 2 });
+      await api.post('/api/products', { code: 'T3', name: 'Ñandú de peluche', costPrice: 1, salePrice: 2 });
+      await api.post('/api/products', { code: 'T4', name: 'Pingüino', costPrice: 1, salePrice: 2 });
+      await api.post('/api/products', { code: 'T5', name: 'Camion de juguete', costPrice: 1, salePrice: 2 });
+
+      const find = async (term) => (await api.get(`/api/products?search=${encodeURIComponent(term)}`)).data.items.map((p) => p.code);
+      assert.deepEqual(await find('cafe'), ['T1'], 'sin tilde encuentra con tilde');
+      assert.deepEqual(await find('CAFÉ'), ['T1'], 'mayúscula con tilde también');
+      assert.deepEqual(await find('arbol'), ['T2']);
+      assert.deepEqual(await find('árbol'), ['T2'], 'minúscula con tilde encuentra mayúscula con tilde');
+      assert.deepEqual(await find('ÁRBOL'), ['T2']);
+      assert.deepEqual(await find('nandu'), ['T3'], 'la ñ se busca con n');
+      assert.deepEqual(await find('ÑANDÚ'), ['T3']);
+      assert.deepEqual(await find('pinguino'), ['T4'], 'la diéresis (ü) también');
+      assert.deepEqual(await find('camión'), ['T5'], 'con tilde encuentra un nombre cargado sin tilde');
+      assert.deepEqual(await find('t3'), ['T3'], 'por código sigue funcionando, sin distinguir mayúsculas');
+      assert.deepEqual(await find('molido'), ['T1'], 'una parte de una palabra');
+      assert.deepEqual(await find('inexistente'), []);
+    });
+
     it('lista con búsqueda, categoría, stock bajo, baja lógica y paginación', async () => {
       const category = (await api.post('/api/categories', { name: 'Bebidas' })).data;
       await product(api, 'B1', 10, 5, 1, { name: 'Gaseosa Cola', minStock: 5, categoryId: category.id });
@@ -168,9 +190,10 @@ describe('catálogo', () => {
     it('busca por nombre, teléfono y email, y da de baja sin borrar', async () => {
       assert.ok((await api.get('/api/customers?search=maria%40mail')).data.items.length >= 1);
       assert.ok((await api.get('/api/customers?search=5555-1234')).data.items.length >= 1);
-      const gomez = (await api.get('/api/customers?search=gomez')).data;
-      assert.equal(gomez.total, 0, 'LIKE de SQLite no ignora tildes: "gomez" no encuentra "Gómez"');
-      assert.equal((await api.get('/api/customers?search=G%C3%B3mez')).data.total, 2);
+      // La búsqueda ignora mayúsculas y tildes, escrita de cualquier forma.
+      for (const term of ['gomez', 'GOMEZ', 'G%C3%B3mez', 'G%C3%93MEZ', 'g%C3%B3mez']) {
+        assert.equal((await api.get(`/api/customers?search=${term}`)).data.total, 2, term);
+      }
 
       const one = (await api.get('/api/customers?search=G%C3%B3mez')).data.items[0];
       const off = await api.patch(`/api/customers/${one.id}/status`, { active: false });
@@ -179,5 +202,22 @@ describe('catálogo', () => {
       assert.equal((await api.get('/api/customers?search=G%C3%B3mez&active=true')).data.total, 1);
       assert.equal((await api.get('/api/customers/99999')).status, 404);
     });
+  });
+});
+
+// Utilidad de búsqueda (sin servidor).
+describe('texto de búsqueda', () => {
+  const { normalizeText, normalizedColumn } = require('../src/utils/searchText');
+
+  it('normaliza quitando tildes y mayúsculas', () => {
+    assert.equal(normalizeText('ÁRBOL de Navidad'), 'arbol de navidad');
+    assert.equal(normalizeText('Ñandú'), 'nandu');
+    assert.equal(normalizeText('Pingüino'), 'pinguino');
+    assert.equal(normalizeText('Gómez'), 'gomez');
+  });
+
+  it('la expresión SQL no supera el límite de anidamiento del analizador de SQLite (~30)', () => {
+    const replaces = (normalizedColumn('x').match(/REPLACE\(/g) ?? []).length;
+    assert.ok(replaces <= 26, `hay ${replaces} REPLACE anidados: con más de ~30 SQLite falla con "parser stack overflow"`);
   });
 });
