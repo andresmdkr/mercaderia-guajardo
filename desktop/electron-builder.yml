@@ -10,6 +10,8 @@ directories:
 files:
   - package.json
   - src/**/*
+  - app/**/*
+  - build/icon.ico
 
 # El binario de SQLite (módulo nativo) tiene que quedar fuera del paquete asar para poder cargarse.
 asar: true
@@ -21,6 +23,7 @@ asarUnpack:
 npmRebuild: false
 
 win:
+  icon: build/icon.ico
   executableName: MercaderiaGuajardo
   target:
     - target: nsis
@@ -36,6 +39,8 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Mercadería Guajardo
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
   runAfterFinish: true
 
 # De acá busca actualizaciones la aplicación instalada (repositorio público).

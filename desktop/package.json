@@ -1,19 +1,26 @@
 {
   "name": "mercaderia-guajardo-desktop",
   "productName": "Mercadería Guajardo",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Mercadería Guajardo - aplicación de escritorio (Windows 8.1, 10 y 11, 32 y 64 bits)",
   "main": "src/main.js",
   "private": true,
   "author": "andresmdkr",
   "license": "UNLICENSED",
   "scripts": {
-    "start": "electron .",
-    "pack": "electron-builder --win --ia32 --dir --publish never",
-    "dist": "electron-builder --win --ia32 --publish never"
+    "start": "node scripts/prepare-app.js && electron .",
+    "pack": "node scripts/prepare-app.js && electron-builder --win --ia32 --dir --publish never",
+    "dist": "node scripts/prepare-app.js && electron-builder --win --ia32 --publish never"
   },
   "dependencies": {
+    "bcryptjs": "3.0.3",
+    "cookie-parser": "1.4.7",
+    "cors": "2.8.6",
+    "dotenv": "18.0.4",
     "electron-updater": "6.8.9",
+    "express": "5.2.1",
+    "jsonwebtoken": "9.0.3",
+    "sequelize": "6.37.8",
     "sqlite3": "5.1.7"
   },
   "devDependencies": {

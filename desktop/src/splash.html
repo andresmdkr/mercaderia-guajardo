@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'" />
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+             background: #faf9f5; color: #29261b; font-family: 'Segoe UI', sans-serif; user-select: none; }
+      h1 { font-size: 22px; font-weight: 600; margin: 0; }
+      p { margin: 0; color: #6b665a; font-size: 14px; }
+      .bar { width: 160px; height: 4px; border-radius: 2px; background: #e8e4d8; overflow: hidden; }
+      .bar::after { content: ''; display: block; width: 40%; height: 100%; background: #c96442; animation: slide 1.2s ease-in-out infinite; }
+      @keyframes slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+    </style>
+  </head>
+  <body>
+    <h1>Mercadería Guajardo</h1>
+    <div class="bar"></div>
+    <p>Iniciando…</p>
+  </body>
+</html>

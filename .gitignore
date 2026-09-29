@@ -7,3 +7,6 @@ dist/
 # Backups de la base (son datos del negocio: no se suben al repositorio)
 server/backups/
 server/data/
+
+# Copia armada por desktop/scripts/prepare-app.js (servidor + interfaz) para el instalador
+desktop/app/

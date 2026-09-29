@@ -27,7 +27,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: desktop/package-lock.json
+          cache-dependency-path: |
+            desktop/package-lock.json
+            client/package-lock.json
 
       - name: Verificar que la etiqueta coincide con la versión
         if: startsWith(github.ref, 'refs/tags/v')
@@ -39,6 +41,16 @@ jobs:
 
       - name: Instalar dependencias
         run: npm ci --ignore-scripts
+
+      # La interfaz (React) se compila acá y se mete dentro de la aplicación junto con el servidor.
+      - name: Compilar la interfaz
+        working-directory: client
+        run: |
+          npm ci
+          npm run build
+
+      - name: Preparar la aplicación (servidor + interfaz)
+        run: node scripts/prepare-app.js
 
       # SQLite es un módulo nativo: se baja ya compilado para 32 bits (no se compila nada).
       - name: SQLite precompilado para 32 bits
@@ -61,7 +73,8 @@ jobs:
       - name: Construir el instalador
         run: npx electron-builder --win --ia32 --publish never
 
-      # Se ejecuta la aplicación de 32 bits ya empaquetada y se le pide el informe de compatibilidad.
+      # Se ejecuta la aplicación de 32 bits ya empaquetada: arranca de verdad el servidor con una base temporal
+      # y comprueba migraciones, interfaz, versión y copia de seguridad.
       - name: Prueba automática de la aplicación empaquetada
         run: |
           $exe = Get-ChildItem dist/win-ia32-unpacked -Filter MercaderiaGuajardo.exe | Select-Object -First 1
