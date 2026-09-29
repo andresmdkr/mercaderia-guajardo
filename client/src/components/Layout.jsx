@@ -93,11 +93,15 @@ function SidebarContent({ onNavigate }) {
         Nueva venta
       </Button>
 
-      <Box component="nav" aria-label="Menú principal" sx={{ flexGrow: 1 }}>
+      {/* Las opciones de trabajo arriba; Configuración abajo de todo, pegada a la línea del pie */}
+      <Box component="nav" aria-label="Menú principal" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <List disablePadding>
-          {[...menuItems, settingsMenuItem].map((item) => (
+          {menuItems.map((item) => (
             <NavItem key={item.key} item={item} active={activeKey === item.key} onNavigate={onNavigate} />
           ))}
+        </List>
+        <List disablePadding sx={{ mb: 1 }}>
+          <NavItem item={settingsMenuItem} active={activeKey === settingsMenuItem.key} onNavigate={onNavigate} />
         </List>
       </Box>
 
