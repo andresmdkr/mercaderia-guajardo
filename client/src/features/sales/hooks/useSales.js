@@ -20,7 +20,7 @@ export default function useSales() {
   const [filters, setFilters] = useState(defaultFilters);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
-  const { sort, toggleSort } = useSort(() => setPage(1));
+  const { sort, toggleSort, resetSort } = useSort(() => setPage(1));
 
   const [data, setData] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
@@ -75,9 +75,10 @@ export default function useSales() {
     setPage(1);
   };
 
-  const hasActiveFilters = filters.preset !== 'today' || Boolean(filters.status || filters.paymentMethod || filters.customer);
+  const hasActiveFilters = filters.preset !== 'today' || Boolean(filters.status || filters.paymentMethod || filters.customer || sort.field);
   const clearFilters = () => {
     setFilters(defaultFilters());
+    resetSort();
     setPage(1);
   };
 

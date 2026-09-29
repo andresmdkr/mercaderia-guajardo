@@ -15,7 +15,7 @@ export default function useProducts() {
   const [showInactive, setShowInactiveFilter] = useState(false);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
-  const { sort, toggleSort } = useSort(() => setPage(1));
+  const { sort, toggleSort, resetSort } = useSort(() => setPage(1));
 
   const [data, setData] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
@@ -77,13 +77,14 @@ export default function useProducts() {
   };
 
   // "Limpiar filtros": todo vuelve a como se abre la pantalla (la búsqueda se limpia al instante, sin esperar el retardo).
-  const hasActiveFilters = Boolean(search.trim() || categoryId || lowStock || showInactive);
+  const hasActiveFilters = Boolean(search.trim() || categoryId || lowStock || showInactive || sort.field);
   const clearFilters = () => {
     setSearchText('');
     setDebouncedSearch('');
     setCategoryIdFilter('');
     setLowStockFilter(false);
     setShowInactiveFilter(false);
+    resetSort();
     setPage(1);
   };
 

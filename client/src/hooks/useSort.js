@@ -15,5 +15,8 @@ export default function useSort(onChange) {
     onChange?.();
   };
 
-  return { sort, toggleSort };
+  // Vuelve al orden de siempre (lo usa "Limpiar filtros").
+  const resetSort = () => setSort(noSort);
+
+  return { sort, toggleSort, resetSort };
 }
