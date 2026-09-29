@@ -12,15 +12,69 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 const ALLOWED_PERMISSIONS = new Set(['notifications', 'media', 'clipboard-sanitized-write', 'fullscreen']);
 // Solo enlaces wa.me con un número (los arma la pantalla de Clientes), nunca una dirección cualquiera.
 const PHONE_LINK = /^https:\/\/wa\.me\/(\d{8,15})$/;
+const CHAT_WAIT_MS = 3000; // cuánto se espera a que WhatsApp cambie de chat por su cuenta antes de recargar
 
 let win = null;
-let currentPhone = null;
+let currentPhone = null; // el último chat pedido
+let probe = null; // intento de abrir un chat sin recargar: { link, notHandled }
+let openedChat = null; // { phone, header }: el último chat que se abrió sin recargar (para no repetirlo si sigue a la vista)
+let probing = false;
 
 const isOpen = () => win !== null && !win.isDestroyed();
 const parsePhone = (url) => PHONE_LINK.exec(String(url))?.[1] ?? null;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ¿Este contenido es la ventana de WhatsApp? (main.js le aplica reglas de navegación distintas)
 const owns = (contents) => isOpen() && win.webContents === contents;
+
+// Lo que dice el encabezado del chat abierto ('' si no hay ninguno). Sirve para notar que WhatsApp cambió de chat.
+const READ_CHAT_HEADER = "(() => { const main = document.querySelector('#main'); return main ? (main.querySelector('header') || main).innerText.slice(0, 120) : ''; })()";
+// ¿WhatsApp ya está cargado y con la sesión iniciada? (aparece la lista de chats)
+const IS_LOGGED_IN = "Boolean(document.querySelector('#pane-side'))";
+// Toca un enlace, como si se hubiera tocado un enlace de wa.me dentro de un chat: WhatsApp Web los abre por su cuenta.
+const clickLink = (link) =>
+  `(() => { const a = document.createElement('a'); a.href = ${JSON.stringify(link)}; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.style.display = 'none'; document.body.appendChild(a); a.click(); a.remove(); })()`;
+
+/**
+ * Abre el chat con la página ya cargada, sin recargar WhatsApp (recargar tarda mucho en una PC lenta).
+ * Devuelve true si WhatsApp cambió de chat solo. Si no (no está con la sesión iniciada, no maneja el enlace o el
+ * chat no cambió), devuelve false y quien llama recarga la página como último recurso.
+ */
+async function openInPage(phone, log) {
+  const contents = win.webContents;
+  if (!(await contents.executeJavaScript(IS_LOGGED_IN).catch(() => false))) {
+    log('WhatsApp: sin sesión iniciada o todavía cargando: se recarga');
+    return false;
+  }
+  const before = await contents.executeJavaScript(READ_CHAT_HEADER).catch(() => '');
+  if (before && openedChat?.phone === phone && openedChat.header === before) return true; // ya está a la vista
+
+  for (const link of [`https://wa.me/${phone}`, `https://api.whatsapp.com/send?phone=${phone}`]) {
+    // Si WhatsApp no maneja el enlace, el navegador intenta abrir una ventana: eso lo delata (ver setWindowOpenHandler).
+    let notHandled = false;
+    probe = { link, notHandled: () => (notHandled = true) };
+    try {
+      await contents.executeJavaScript(clickLink(link), true);
+      const deadline = Date.now() + CHAT_WAIT_MS;
+      while (Date.now() < deadline && !notHandled) {
+        await sleep(300);
+        const after = await contents.executeJavaScript(READ_CHAT_HEADER).catch(() => '');
+        if (after && after !== before) {
+          log(`WhatsApp: chat abierto sin recargar (con ${new URL(link).host})`);
+          openedChat = { phone, header: after };
+          return true;
+        }
+      }
+      log(`WhatsApp: ${notHandled ? 'no manejó' : 'no cambió el chat con'} el enlace de ${new URL(link).host}`);
+    } catch (error) {
+      log(`WhatsApp: falló el intento sin recargar: ${error.message}`);
+      return false;
+    } finally {
+      probe = null;
+    }
+  }
+  return false;
+}
 
 function create({ icon, log }) {
   win = new BrowserWindow({
@@ -42,6 +96,10 @@ function create({ icon, log }) {
 
   // Cualquier otro sitio (enlaces dentro de un chat, por ejemplo) se abre en el navegador del sistema.
   contents.setWindowOpenHandler(({ url }) => {
+    if (probe && url === probe.link) {
+      probe.notHandled(); // era nuestro intento de abrir el chat sin recargar, y WhatsApp no lo manejó
+      return { action: 'deny' };
+    }
     if (/^https:\/\//.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
@@ -76,13 +134,17 @@ function create({ icon, log }) {
   win.on('closed', () => {
     win = null;
     currentPhone = null;
+    probe = null;
+    openedChat = null;
   });
 }
 
 // Abre (o trae al frente) la ventana de WhatsApp en el chat de ese número. Devuelve { ok, message }.
-function open(url, { icon, log }) {
+// Si la ventana ya estaba abierta con la sesión iniciada, cambia de chat sin recargar; si no, carga el chat.
+async function open(url, { icon, log }) {
   const phone = parsePhone(url);
   if (!phone) return { ok: false, message: 'Enlace de WhatsApp no válido' };
+  if (probing) return { ok: true }; // ya está cambiando de chat: un segundo toque no tiene que pisarlo
 
   currentPhone = phone;
   const existed = isOpen();
@@ -90,7 +152,20 @@ function open(url, { icon, log }) {
   if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
-  log(`WhatsApp: abre el chat de un cliente (ventana ${existed ? 'ya abierta' : 'nueva'})`);
+
+  const contents = win.webContents;
+  if (existed && !contents.isLoading() && contents.getURL().startsWith(HOST)) {
+    probing = true;
+    try {
+      if (await openInPage(phone, log)) return { ok: true };
+    } finally {
+      probing = false;
+    }
+    if (!isOpen()) return { ok: true }; // la cerraron mientras tanto
+  }
+
+  log(`WhatsApp: carga el chat (ventana ${existed ? 'ya abierta' : 'nueva'})`);
+  openedChat = null;
   win.webContents.loadURL(`${HOST}/send?phone=${phone}`);
   return { ok: true };
 }
