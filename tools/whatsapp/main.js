@@ -91,28 +91,69 @@ let openedChat = null; // { phone, header }
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // (Misma lógica que desktop/src/whatsapp.js de la aplicación del negocio: cambiar de chat sin recargar la página.)
-const READ_CHAT_HEADER = "(() => { const main = document.querySelector('#main'); return main ? (main.querySelector('header') || main).innerText.slice(0, 120) : ''; })()";
+// Nombre del contacto del chat abierto ('' si no hay ninguno): la primera línea del encabezado. Se compara solo el nombre porque
+// el resto del encabezado ("en línea", "últ. vez hoy 14:05") cambia solo, y eso hacía creer que el chat había cambiado (o no).
+const READ_CHAT_NAME = "(() => { const main = document.querySelector('#main'); if (!main) return ''; const header = main.querySelector('header') || main; return (header.innerText || '').split('\\n').map((line) => line.trim()).find(Boolean) || ''; })()";
+// Qué muestra WhatsApp: 'chats' (sesión iniciada), 'qr' (pide vincular) o 'cargando'
+const PAGE_STATE = "document.querySelector('#pane-side') ? 'chats' : (/Escanea|Vincular/.test(document.body.innerText) ? 'qr' : 'cargando')";
 const IS_LOGGED_IN = "Boolean(document.querySelector('#pane-side'))";
+const HAS_CHAT_OPEN = "Boolean(document.querySelector('#main footer'))";
 const clickLink = (link) =>
   `(() => { const a = document.createElement('a'); a.href = ${JSON.stringify(link)}; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.style.display = 'none'; document.body.appendChild(a); a.click(); a.remove(); })()`;
 
-async function openInPage(phone) {
+// Espera (hasta `ms`) a que una expresión de la página sea verdadera.
+async function waitFor(expression, ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end && win) {
+    if (await win.webContents.executeJavaScript(expression).catch(() => false)) return true;
+    await sleep(400);
+  }
+  return false;
+}
+
+// Recargar WhatsApp entero tarda un minuto o más en esta PC: solo se hace cuando de verdad no hay otra salida.
+// Devuelve true si el chat quedó abierto sin recargar.
+async function openInPage(phone, paste) {
   const contents = win.webContents;
-  if (!(await contents.executeJavaScript(IS_LOGGED_IN).catch(() => false))) return false;
-  const before = await contents.executeJavaScript(READ_CHAT_HEADER).catch(() => '');
-  if (before && openedChat?.phone === phone && openedChat.header === before) return true;
+  if (!(await contents.executeJavaScript(IS_LOGGED_IN).catch(() => false))) {
+    const state = await contents.executeJavaScript(PAGE_STATE).catch(() => 'cargando');
+    if (state === 'qr') {
+      log('WhatsApp pide vincular el teléfono (QR): no se puede cambiar de chat');
+      return false;
+    }
+    // La lista de chats puede faltar un momento mientras WhatsApp se acomoda: se espera antes de recargar.
+    log('todavía no se ven los chats: espero hasta 20 s antes de recargar');
+    if (!(await waitFor(IS_LOGGED_IN, 20000))) {
+      log('siguen sin verse los chats: se recarga');
+      return false;
+    }
+  }
+  const before = await contents.executeJavaScript(READ_CHAT_NAME).catch(() => '');
+  if (before && openedChat?.phone === phone && openedChat.name === before) {
+    log(`el chat de ${before} ya estaba abierto: no hace falta recargar`);
+    return true;
+  }
+
   for (const link of [`https://wa.me/${phone}`, `https://api.whatsapp.com/send?phone=${phone}`]) {
     let notHandled = false;
     probe = { link, notHandled: () => (notHandled = true) };
     try {
       await contents.executeJavaScript(clickLink(link), true);
-      const deadline = Date.now() + 12000; // la PC es lenta
+      const clickedAt = Date.now();
+      const deadline = clickedAt + 12000; // la PC es lenta
       while (Date.now() < deadline && !notHandled) {
         await sleep(300);
-        const after = await contents.executeJavaScript(READ_CHAT_HEADER).catch(() => '');
+        const after = await contents.executeJavaScript(READ_CHAT_NAME).catch(() => '');
         if (after && after !== before) {
           log(`chat abierto sin recargar (con ${new URL(link).host})`);
-          openedChat = { phone, header: after };
+          openedChat = { phone, name: after };
+          return true;
+        }
+        // El chat pedido probablemente ya estaba abierto (WhatsApp no cambia nada). Para solo abrirlo no hace falta seguir esperando ni recargar:
+        // si igual cambiara más tarde, se ve. Con un comprobante para pegar sí hay que estar seguros del chat, así que se sigue esperando.
+        if (!paste && Date.now() - clickedAt > 5000 && (await contents.executeJavaScript(HAS_CHAT_OPEN).catch(() => false))) {
+          log('el chat no cambió: se toma como ya abierto y no se recarga');
+          if (before) openedChat = { phone, name: before };
           return true;
         }
       }
@@ -129,6 +170,21 @@ async function openInPage(phone) {
     }
   }
   return false;
+}
+
+// Después de recargar con /send?phone=, se anota qué chat quedó abierto para reconocerlo la próxima vez.
+let rememberId = 0;
+async function rememberChatWhenOpen(phone, id) {
+  const end = Date.now() + 120000;
+  while (Date.now() < end && win && id === rememberId) {
+    const name = await win.webContents.executeJavaScript(READ_CHAT_NAME).catch(() => '');
+    if (name) {
+      openedChat = { phone, name };
+      log(`chat abierto tras cargar: ${name}`);
+      return;
+    }
+    await sleep(1000);
+  }
 }
 
 // Pega el portapapeles (el comprobante, copiado como archivo) en el chat abierto:
@@ -212,13 +268,23 @@ let opening = false;
 async function openChat(phone, paste = false, file = null) {
   if (!win || opening) return;
   log(`pedido desde la aplicación del negocio: chat de ${phone}${paste ? ' (con comprobante)' : ''}`);
+  const wasHidden = !win.isVisible();
   if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
+  if (wasHidden) await sleep(700); // deja que la ventana oculta se pinte antes de tocar la página (oculta, el navegador la tiene frenada)
+  if (!win) return;
+
+  // Si la página está cargando (por ejemplo WhatsApp se está acomodando solo), se espera en vez de recargar encima.
+  if (win.webContents.isLoading()) {
+    log('la página todavía está cargando: espero antes de abrir el chat');
+    await waitFor('document.readyState === "complete"', 15000);
+    if (!win) return;
+  }
   if (!win.webContents.isLoading() && win.webContents.getURL().startsWith(WHATSAPP_URL)) {
     opening = true;
     try {
-      if (await openInPage(phone)) {
+      if (await openInPage(phone, paste)) {
         if (paste) pasteWhenReady(log, file);
         return;
       }
@@ -228,7 +294,9 @@ async function openChat(phone, paste = false, file = null) {
   }
   log('carga el chat (recarga la página)');
   openedChat = null;
+  rememberId += 1;
   const loading = win.webContents.loadURL(`${WHATSAPP_URL}send?phone=${phone}`).catch(() => {});
+  loading.then(() => rememberChatWhenOpen(phone, rememberId));
   if (paste) loading.then(() => pasteWhenReady(log, file));
 }
 
@@ -334,7 +402,7 @@ function createWindow({ hidden = false } = {}) {
     let qrLogged = false;
     while (Date.now() < deadline && win && id === navId) {
       const state = await win.webContents
-        .executeJavaScript("document.querySelector('#pane-side') ? 'chats' : (/Escanea|Vincular/.test(document.body.innerText) ? 'qr' : 'cargando')")
+        .executeJavaScript(PAGE_STATE)
         .catch(() => 'cargando');
       if (state === 'chats') {
         log(`WhatsApp LISTO: se ven los chats a los ${seconds(Date.now() - navStart)} s de empezar a cargar (${seconds(Date.now() - startedAt)} s desde que se abrió el programa)`);
