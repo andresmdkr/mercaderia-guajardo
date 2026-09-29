@@ -21,10 +21,11 @@ import ConfirmDialog from '../../../components/ConfirmDialog';
 import { desktop } from '../../../services/desktop';
 import { formatBytes, formatDateTime } from '../../../utils/format';
 import { BACKUP_KINDS } from '../backupKinds';
+import ExternalBackupCard from './ExternalBackupCard';
 import useBackups from '../hooks/useBackups';
 
 export default function BackupsCard({ onMessage }) {
-  const { folder, items, loading, creating, error, create } = useBackups();
+  const { folder, items, external, loading, creating, error, create, setExternalFolder } = useBackups();
   const [restoring, setRestoring] = useState(null); // copia elegida para restaurar (pide confirmación)
   const [restoreError, setRestoreError] = useState(null);
 
@@ -115,6 +116,8 @@ export default function BackupsCard({ onMessage }) {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <ExternalBackupCard external={external} onChange={setExternalFolder} onMessage={onMessage} />
 
       {restoring && (
         <ConfirmDialog

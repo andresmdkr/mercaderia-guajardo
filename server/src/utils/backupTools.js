@@ -43,12 +43,29 @@ function listBackups(dir = backupDir()) {
 const formatSize = (bytes) =>
   bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
+// Las copias se hacen de a una: dos pedidos simultáneos (doble clic) no pueden elegir el mismo nombre de archivo.
+let backupQueue = Promise.resolve();
+function createBackup(sequelize, label = '') {
+  const result = backupQueue.then(() => createBackupNow(sequelize, label));
+  backupQueue = result.catch(() => {});
+  return result;
+}
+
 // Copia consistente de la base en uso. `label` se agrega al nombre (ej. "antes-de-restaurar").
-async function createBackup(sequelize, label = '') {
+async function createBackupNow(sequelize, label) {
   const dir = backupDir();
   fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${PREFIX}_${timestamp()}${label ? `_${label}` : ''}${EXTENSION}`);
+  // El nombre lleva los segundos: si ya hay una copia de este mismo segundo (dos clics seguidos), se espera al
+  // siguiente en vez de fallar (VACUUM INTO no pisa archivos que ya existen).
+  const nameFor = () => path.join(dir, `${PREFIX}_${timestamp()}${label ? `_${label}` : ''}${EXTENSION}`);
+  let file = nameFor();
+  while (fs.existsSync(file)) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    file = nameFor();
+  }
   await sequelize.query('VACUUM INTO :file', { replacements: { file } });
+  // Si hay una carpeta externa configurada, la copia también va para allá (nunca falla la copia local por eso).
+  await require('./externalBackup').copyToExternal(file); // require acá adentro: externalBackup usa este módulo
   return file;
 }
 

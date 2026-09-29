@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('desktop', {
   getUpdateStatus: () => ipcRenderer.invoke('desktop:get-update-status'),
   checkForUpdates: () => ipcRenderer.invoke('desktop:check-for-updates'),
   installUpdate: () => ipcRenderer.invoke('desktop:install-update'),
+  chooseFolder: () => ipcRenderer.invoke('desktop:choose-folder'),
   printHtml: (html) => ipcRenderer.invoke('desktop:print-html', String(html)),
   copyDiagnostics: () => ipcRenderer.invoke('desktop:copy-diagnostics'),
   onUpdateStatus: (callback) => {

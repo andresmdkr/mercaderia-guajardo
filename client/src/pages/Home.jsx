@@ -2,6 +2,7 @@ import { useSelector } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Grid, Paper, Typography, alpha, useTheme } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCartOutlined';
+import ExternalBackupWarning from '../features/settings/components/ExternalBackupWarning';
 import { flatSections } from '../theme/sections';
 
 function IconBox({ icon: Icon, color, size = 44 }) {
@@ -109,6 +110,8 @@ export default function Home() {
       <Typography color="text.secondary" sx={{ mb: 4 }}>
         ¿Qué querés hacer hoy?
       </Typography>
+
+      <ExternalBackupWarning />
 
       <NewSaleCard />
 

@@ -141,6 +141,14 @@ function registerIpc() {
   handle('desktop:check-for-updates', () => updates.check());
   handle('desktop:install-update', () => updates.install());
 
+  handle('desktop:choose-folder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Elegí la carpeta para la copia externa (un pendrive, Google Drive, Dropbox...)',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    return { canceled: result.canceled, folder: result.filePaths[0] ?? null };
+  });
+
   handle('desktop:print-html', (html) => printInChildProcess(html, { log }));
 
   handle('desktop:copy-diagnostics', () => {

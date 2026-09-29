@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getErrorMessage } from '../../../services/api';
-import { createBackup, fetchBackups } from '../api/settingsApi';
+import { createBackup, fetchBackups, setExternalBackupFolder } from '../api/settingsApi';
 
 // Lista de copias de seguridad y la acción de hacer una nueva.
 export default function useBackups() {
-  const [data, setData] = useState({ folder: '', items: [] });
+  const [data, setData] = useState({ folder: '', items: [], external: null });
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState(null);
@@ -51,5 +51,11 @@ export default function useBackups() {
     }
   };
 
-  return { folder: data.folder, items: data.items, loading, creating, error, create };
+  // Elige (o quita, con null) la carpeta de la copia externa. Si falla, el error llega a quien llama.
+  const setExternalFolder = async (folder) => {
+    await setExternalBackupFolder(folder);
+    reload();
+  };
+
+  return { folder: data.folder, items: data.items, external: data.external, loading, creating, error, create, setExternalFolder };
 }
