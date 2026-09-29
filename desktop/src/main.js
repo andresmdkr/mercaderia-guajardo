@@ -9,10 +9,14 @@ const path = require('node:path');
 const { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, shell } = require('electron');
 const appServer = require('./appServer');
 const diagnostics = require('./diagnostics');
-const { printHtml } = require('./print');
+const { printInChildProcess, runPrintJob } = require('./print');
 const updates = require('./updates');
 
 const SMOKE_TEST = process.argv.includes('--smoke-test'); // modo automático sin ventana (lo usa GitHub Actions)
+
+// Segunda copia del programa que solo imprime (ver print.js): usa su propia carpeta temporal y no toca los datos.
+const PRINT_JOB = (process.argv.find((arg) => arg.startsWith('--print-job=')) ?? '').slice('--print-job='.length);
+if (PRINT_JOB) app.setPath('userData', path.dirname(PRINT_JOB));
 
 // La prueba automática usa una carpeta temporal: nunca toca los datos reales del negocio.
 if (SMOKE_TEST) app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'mg-smoke-')));
@@ -137,7 +141,7 @@ function registerIpc() {
   handle('desktop:check-for-updates', () => updates.check());
   handle('desktop:install-update', () => updates.install());
 
-  handle('desktop:print-html', (html) => printHtml(html, { parent: mainWindow }));
+  handle('desktop:print-html', (html) => printInChildProcess(html, { log }));
 
   handle('desktop:copy-diagnostics', () => {
     const report = diagnostics.buildReport({ app, server: appServer.getState(), update: updates.getStatus(), logFile });
@@ -217,7 +221,7 @@ async function runSmokeTest() {
 
 // --- Arranque ---
 // Una sola copia de la aplicación abierta a la vez (si ya hay otra, esta trae la ventana al frente y se cierra).
-const isFirstInstance = SMOKE_TEST || app.requestSingleInstanceLock();
+const isFirstInstance = SMOKE_TEST || Boolean(PRINT_JOB) || app.requestSingleInstanceLock();
 if (!isFirstInstance) app.quit();
 
 app.on('second-instance', () => {
@@ -228,6 +232,7 @@ app.on('second-instance', () => {
 
 app.whenReady().then(async () => {
   if (!isFirstInstance) return;
+  if (PRINT_JOB) return runPrintJob(PRINT_JOB);
   logFile = diagnostics.logPath(app.getPath('userData'));
   log(`--- inicio (versión ${app.getVersion()}, ${process.platform} ${process.arch}) ---`);
 
@@ -252,10 +257,12 @@ app.whenReady().then(async () => {
 // Al salir (cerrar la ventana, actualizar o restaurar) primero se cierra la base de datos.
 let databaseClosed = false;
 app.on('before-quit', (event) => {
-  if (databaseClosed || SMOKE_TEST) return;
+  if (databaseClosed || SMOKE_TEST || PRINT_JOB) return;
   event.preventDefault();
   databaseClosed = true;
   appServer.close().finally(() => app.quit());
 });
 
-app.on('window-all-closed', () => app.quit());
+app.on('window-all-closed', () => {
+  if (!PRINT_JOB) app.quit(); // la copia que imprime termina sola cuando deja su resultado
+});
