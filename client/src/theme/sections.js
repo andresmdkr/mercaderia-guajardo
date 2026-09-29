@@ -4,6 +4,7 @@ import HomeIcon from '@mui/icons-material/HomeOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory2Outlined';
 import PeopleIcon from '@mui/icons-material/PeopleOutlined';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSaleOutlined';
+import PriceChangeIcon from '@mui/icons-material/PriceChangeOutlined';
 import ReceiptIcon from '@mui/icons-material/ReceiptLongOutlined';
 import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import SwapVertIcon from '@mui/icons-material/SwapVertOutlined';
@@ -49,6 +50,13 @@ export const sections = [
         path: '/products/categories',
         icon: CategoryIcon,
         description: 'Organizá tus productos por rubro',
+      },
+      {
+        key: 'prices',
+        label: 'Actualizar precios',
+        path: '/products/price-updates',
+        icon: PriceChangeIcon,
+        description: 'Subí o bajá los precios de muchos productos a la vez',
       },
     ],
   },

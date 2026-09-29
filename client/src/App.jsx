@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import CategoriesPage from './features/categories/pages/CategoriesPage';
 import CustomersPage from './features/customers/pages/CustomersPage';
+import PriceUpdatePage from './features/products/pages/PriceUpdatePage';
 import ProductsPage from './features/products/pages/ProductsPage';
 import NewSalePage from './features/sales/pages/NewSalePage';
 import SummariesPage from './features/sales/pages/SummariesPage';
@@ -34,7 +35,9 @@ export default function App() {
           <Route path="/sales/new" element={<NewSalePage />} />
           <Route path="/sales/summaries" element={<SummariesPage />} />
           <Route path="/products" element={<ProductsPage />} />
-          <Route path="/products/categories" element={<CategoriesPage />} />          <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/products/categories" element={<CategoriesPage />} />
+          <Route path="/products/price-updates" element={<PriceUpdatePage />} />
+          <Route path="/customers" element={<CustomersPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/products/stock" element={<StockPage />} />
