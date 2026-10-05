@@ -245,7 +245,7 @@ describe('robustez de la API', () => {
   it('los clientes se encuentran por teléfono escribiendo solo los dígitos', async () => {
     await api.post('/api/customers', { name: 'Telefónica Prueba', phone: '(0264) 555-0142' });
     const ids = async (q) => (await api.get('/api/customers?search=' + encodeURIComponent(q))).data.items.map((c) => c.name);
-    for (const query of ['5550142', '2645550142', '264 555', '555-0142', '+54 9 264 555 0142', '0264 555 0142', '(264) 5550142', '58130']) {
+    for (const query of ['5550142', '2645550142', '264 555', '555-0142', '+54 9 264 555 0142', '0264 555 0142', '(264) 5550142', '55014']) {
       assert.ok((await ids(query)).includes('Telefónica Prueba'), `"${query}" no lo encontró`);
     }
     assert.ok(!(await ids('264999')).includes('Telefónica Prueba'), 'otro número no coincide');

@@ -51,8 +51,8 @@ describe('modo de prueba', () => {
     assert.match(business.phone, /^264 /);
 
     const customers = (await api.get('/api/customers?limit=100')).data.items;
-    const andres = customers.find((c) => c.name === 'Martín Domínguez');
-    assert.equal(andres?.phone, '264 555-0142', 'el cliente de la demostración');
+    const martin = customers.find((c) => c.name === 'Martín Domínguez');
+    assert.equal(martin?.phone, '264 555-0142', 'el cliente de la demostración');
     assert.ok(customers.every((c) => !c.phone || c.phone.startsWith('264 ')), 'todos con característica de San Juan');
 
     const names = (await api.get('/api/products?limit=100')).data.items.map((p) => p.name);
