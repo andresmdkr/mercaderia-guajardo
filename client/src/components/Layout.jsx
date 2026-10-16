@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Box,
   Button,
+  CircularProgress,
   Container,
   Drawer,
   IconButton,
@@ -174,7 +175,9 @@ export default function Layout() {
               '@keyframes pageIn': { from: { opacity: 0, transform: 'translateY(4px)' }, to: { opacity: 1, transform: 'none' } },
             }}
           >
-            <Outlet />
+            <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}>
+              <Outlet />
+            </Suspense>
           </Box>
         </Container>
       </Box>

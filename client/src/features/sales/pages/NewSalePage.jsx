@@ -14,7 +14,7 @@ import PrintReceiptButton from '../components/PrintReceiptButton';
 import SaleSummary from '../components/SaleSummary';
 import SendReceiptWhatsappButton from '../components/SendReceiptWhatsappButton';
 import useNewSale from '../hooks/useNewSale';
-import { openReceiptPdf } from '../pdf/receiptPdf';
+import { openReceiptPdf } from '../pdf/openReceipt';
 
 export default function NewSalePage() {
   const sale = useNewSale();

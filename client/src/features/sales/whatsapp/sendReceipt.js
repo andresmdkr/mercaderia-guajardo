@@ -1,11 +1,11 @@
 import { desktop } from '../../../services/desktop';
 import { formatVoucherNumber } from '../../../utils/format';
-import { buildReceiptPdf } from '../pdf/receiptPdf';
 
 // Los enlaces de WhatsApp abren un chat pero no adjuntan archivos. En la app instalada, el PDF se guarda y queda copiado
 // como archivo (en el chat se pega con Ctrl+V); en el navegador común se descarga y se abre el chat para adjuntarlo a mano.
 // `url` es el enlace wa.me del destinatario. Devuelve { ok, message, manual, copied, autoPaste }.
 export async function sendReceiptByWhatsapp(sale, business, url) {
+  const { buildReceiptPdf } = await import('../pdf/receiptPdf'); // se descarga recién ahora (es una librería pesada)
   const doc = buildReceiptPdf(sale, business);
   const filename = `comprobante-${formatVoucherNumber(sale.id)}.pdf`;
 

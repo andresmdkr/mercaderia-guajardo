@@ -1,16 +1,24 @@
-import { Alert, Box, Button, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography, alpha } from '@mui/material';
-import ArrowIcon from '@mui/icons-material/ArrowForwardOutlined';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import DiscardIcon from '@mui/icons-material/DeleteSweepOutlined';
-import UndoIcon from '@mui/icons-material/UndoOutlined';
-import { formatInteger, formatMoney } from '../../../utils/format';
-import PriceCell from './PriceCell';
-import PriceVariation from './PriceVariation';
+import { formatInteger } from '../../../utils/format';
+import PriceRow from './PriceRow';
+
+const PAGE_SIZE = 50; // filas que se dibujan por vez: con cientos de casilleros editables la pantalla se pone lenta en una PC vieja
 
 // Vista previa: cómo quedarían los precios. Todavía no se cambió nada.
-// Cada fila: precio actual (tachado) → precio nuevo (se puede escribir uno exacto) y la variación.
+// Cada fila: precio de antes (tachado) → precio nuevo (se puede escribir uno exacto) y la variación.
 export default function PricePreviewTable({ preview, showCost, busy, onApply, onOverride, onDiscardManual }) {
   const { count, unchanged, items, truncated } = preview;
+  const [visible, setVisible] = useState(PAGE_SIZE);
   const manualCount = items.filter((item) => item.manual).length;
+
+  // Función estable para que las filas que no cambiaron no se vuelvan a dibujar.
+  const latest = useRef(onOverride);
+  useEffect(() => {
+    latest.current = onOverride;
+  });
+  const handleOverride = useCallback((id, price) => latest.current(id, price), []);
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -30,7 +38,7 @@ export default function PricePreviewTable({ preview, showCost, busy, onApply, on
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Para un precio exacto en algún producto, escribilo en el casillero de la derecha y apretá Enter.
+          Para un precio exacto en algún producto, escribilo en la columna <strong>Ahora</strong> y apretá Enter.
         </Typography>
         {manualCount > 0 && (
           <Button size="small" color="warning" variant="outlined" startIcon={<DiscardIcon />} disabled={busy} onClick={onDiscardManual}>
@@ -44,57 +52,32 @@ export default function PricePreviewTable({ preview, showCost, busy, onApply, on
           <TableHead>
             <TableRow>
               <TableCell>Producto</TableCell>
-              <TableCell align="right">Precio: antes → ahora</TableCell>
+              <TableCell align="right">Precio antes</TableCell>
+              <TableCell sx={{ width: 32, px: 0 }} />
+              <TableCell>Precio ahora</TableCell>
               <TableCell align="center">Variación</TableCell>
               {showCost && <TableCell align="right">Costo actual</TableCell>}
               {showCost && <TableCell align="right">Costo nuevo</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id} hover sx={item.manual ? { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.14), '&.MuiTableRow-hover:hover': { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.2) } } : undefined}>
-                <TableCell>
-                  {item.name}
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                    {item.code}
-                    {item.manual && ' · precio puesto a mano'}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                    <Typography component="span" color="text.secondary" sx={{ textDecoration: 'line-through', whiteSpace: 'nowrap' }}>
-                      {formatMoney(item.oldPrice)}
-                    </Typography>
-                    <ArrowIcon fontSize="small" color="disabled" />
-                    <PriceCell key={`${item.id}-${item.newPrice}`} item={item} busy={busy} onCommit={(price) => onOverride(item.id, price)} />
-                    <Tooltip title="Volver al precio calculado">
-                      <span>
-                        <IconButton
-                          size="small"
-                          aria-label={`Volver al precio calculado de ${item.name}`}
-                          disabled={busy || !item.manual}
-                          onClick={() => onOverride(item.id, null)}
-                          sx={{ visibility: item.manual ? 'visible' : 'hidden' }}
-                        >
-                          <UndoIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                  </Box>
-                </TableCell>
-                <TableCell align="center">
-                  <PriceVariation oldPrice={item.oldPrice} newPrice={item.newPrice} />
-                </TableCell>
-                {showCost && <TableCell align="right">{formatMoney(item.oldCost)}</TableCell>}
-                {showCost && <TableCell align="right">{formatMoney(item.newCost)}</TableCell>}
-              </TableRow>
+            {items.slice(0, visible).map((item) => (
+              <PriceRow key={item.id} item={item} showCost={showCost} busy={busy} onOverride={handleOverride} />
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      {truncated && (
+
+      {visible < items.length && (
+        <Box sx={{ mt: 1 }}>
+          <Button size="small" onClick={() => setVisible((current) => current + PAGE_SIZE)}>
+            Mostrar más productos ({formatInteger(items.length - visible)} más)
+          </Button>
+        </Box>
+      )}
+      {truncated && visible >= items.length && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-          Se muestran los primeros {items.length}. El cambio se aplica a los {formatInteger(count)}.
+          Se muestran los primeros {formatInteger(items.length)}. El cambio se aplica a los {formatInteger(count)}.
         </Typography>
       )}
 

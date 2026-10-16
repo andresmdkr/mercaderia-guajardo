@@ -1,21 +1,23 @@
-import { useEffect } from 'react';
+import { lazy, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import CategoriesPage from './features/categories/pages/CategoriesPage';
-import CustomersPage from './features/customers/pages/CustomersPage';
-import PriceUpdatePage from './features/products/pages/PriceUpdatePage';
-import ProductsPage from './features/products/pages/ProductsPage';
-import NewSalePage from './features/sales/pages/NewSalePage';
-import SummariesPage from './features/sales/pages/SummariesPage';
-import ReportsPage from './features/reports/pages/ReportsPage';
-import SettingsPage from './features/settings/pages/SettingsPage';
-import SalesPage from './features/sales/pages/SalesPage';
-import StockPage from './features/stock/pages/StockPage';
 import { checkSession } from './redux/sessionSlice';
+
+// Cada pantalla se descarga recién al entrar (la aplicación abre más rápido en una PC lenta). Inicio y el ingreso van en el arranque.
+const CategoriesPage = lazy(() => import('./features/categories/pages/CategoriesPage'));
+const CustomersPage = lazy(() => import('./features/customers/pages/CustomersPage'));
+const PriceUpdatePage = lazy(() => import('./features/products/pages/PriceUpdatePage'));
+const ProductsPage = lazy(() => import('./features/products/pages/ProductsPage'));
+const NewSalePage = lazy(() => import('./features/sales/pages/NewSalePage'));
+const SummariesPage = lazy(() => import('./features/sales/pages/SummariesPage'));
+const ReportsPage = lazy(() => import('./features/reports/pages/ReportsPage'));
+const SettingsPage = lazy(() => import('./features/settings/pages/SettingsPage'));
+const SalesPage = lazy(() => import('./features/sales/pages/SalesPage'));
+const StockPage = lazy(() => import('./features/stock/pages/StockPage'));
 
 export default function App() {
   const dispatch = useDispatch();

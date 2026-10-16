@@ -21,7 +21,7 @@ import { formatDateTime, formatMoney, formatSaleNumber } from '../../../utils/fo
 import useBusinessSettings from '../../settings/hooks/useBusinessSettings';
 import { voidSale } from '../api/salesApi';
 import useSaleDetail from '../hooks/useSaleDetail';
-import { openReceiptPdf } from '../pdf/receiptPdf';
+import { openReceiptPdf } from '../pdf/openReceipt';
 import { PAYMENT_METHODS, SALE_STATUSES } from '../salesConstants';
 import PrintReceiptButton from './PrintReceiptButton';
 import SendReceiptWhatsappButton from './SendReceiptWhatsappButton';
