@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Button, Checkbox, FormControlLabel, MenuItem, Paper, TextField, Typography } from '@mui/material';
 import { formatMoney } from '../../../utils/format';
 
-const emptyValues = { percent: '', categoryId: '', roundTo: '0', adjustCost: false };
+const emptyValues = { percent: '', categoryId: '', roundTo: '0', roundMode: 'nearest', adjustCost: false };
 
 const ROUND_OPTIONS = [
   { value: '0', label: 'Sin redondear' },
@@ -10,6 +10,12 @@ const ROUND_OPTIONS = [
   { value: '50', label: 'A $50' },
   { value: '100', label: 'A $100' },
   { value: '500', label: 'A $500' },
+];
+
+const ROUND_MODES = [
+  { value: 'nearest', label: 'Al más cercano' },
+  { value: 'down', label: 'Hacia abajo' },
+  { value: 'up', label: 'Hacia arriba' },
 ];
 
 // Formulario de la actualización: cuánto sube o baja, a qué productos y cómo se redondea.
@@ -40,7 +46,7 @@ export default function PriceUpdateForm({ categories, busy, onPreview, onChange 
       <Typography variant="h6" gutterBottom>
         1. Elegí el cambio
       </Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 2, alignItems: 'start' }}>
         <TextField
           label="Porcentaje"
           value={values.percent}
@@ -68,6 +74,15 @@ export default function PriceUpdateForm({ categories, busy, onPreview, onChange 
             </MenuItem>
           ))}
         </TextField>
+        {values.roundTo !== '0' && (
+          <TextField select label="Cómo redondear" value={values.roundMode} onChange={set('roundMode')} size="small">
+            {ROUND_MODES.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
       </Box>
       <FormControlLabel
         sx={{ mt: 1 }}

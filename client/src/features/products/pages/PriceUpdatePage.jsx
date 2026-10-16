@@ -52,6 +52,7 @@ export default function PriceUpdatePage() {
             showCost={updates.preview.body.costPercent !== undefined}
             busy={updates.busy}
             onApply={() => setConfirming(true)}
+            onOverride={updates.setOverride}
           />
         )}
 

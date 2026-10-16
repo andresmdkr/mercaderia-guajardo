@@ -2,12 +2,14 @@ import { Button, Chip, Paper, Table, TableBody, TableCell, TableContainer, Table
 import UndoIcon from '@mui/icons-material/UndoOutlined';
 import { formatDateTime, formatInteger } from '../../../utils/format';
 
+const ROUND_MODE_LABELS = { nearest: '', down: 'hacia abajo', up: 'hacia arriba' };
+
 const formatPercent = (value) => `${value > 0 ? '+' : ''}${value.toLocaleString('es-AR')}%`;
 
 // "+10% · Bebidas · redondeo a $10 · costo +10%"
 function describe(item) {
   const parts = [formatPercent(item.percent), item.categoryName ? `Categoría ${item.categoryName}` : 'Todos los productos'];
-  if (item.roundTo > 0) parts.push(`redondeo a $${item.roundTo}`);
+  if (item.roundTo > 0) parts.push(`redondeo ${ROUND_MODE_LABELS[item.roundMode] ?? ''} a $${item.roundTo}`.replace('  ', ' '));
   if (item.costPercent !== null) parts.push(`costo ${formatPercent(item.costPercent)}`);
   return parts.join(' · ');
 }

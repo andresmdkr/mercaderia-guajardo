@@ -139,4 +139,63 @@ describe('actualización masiva de precios', () => {
       assert.equal((await api.post('/api/price-updates', { percent: 0.01, categoryId: catB.id, expectedCount: 1 })).status, 400);
     }
   });
+
+  it('redondea al más cercano, hacia abajo o hacia arriba', async () => {
+    const run = async (roundMode, roundTo) => {
+      const response = await api.post('/api/price-updates/preview', { percent: 10, categoryId: catA.id, roundTo, roundMode });
+      assert.equal(response.status, 200, roundMode);
+      return Object.fromEntries(response.data.items.map((item) => [item.code, item.newPrice]));
+    };
+    // P1 $100 → 110 y P2 $250,50 → 275,55
+    assert.deepEqual(await run('nearest', 50), { P1: 100, P2: 300 });
+    assert.deepEqual(await run('down', 50), { P1: 100, P2: 250 });
+    assert.deepEqual(await run('up', 50), { P1: 150, P2: 300 });
+    assert.deepEqual(await run(undefined, 50), { P1: 100, P2: 300 }, 'sin modo: al más cercano, como antes');
+    assert.equal((await api.post('/api/price-updates/preview', body({ roundTo: 10, roundMode: 'raro' }))).status, 400);
+  });
+
+  it('hacia abajo tampoco deja en cero un precio con valor', async () => {
+    const response = await api.post('/api/price-updates/preview', body({ categoryId: catB.id, roundTo: 500, roundMode: 'down' }));
+    const p4 = response.data.items.find((item) => item.code === 'P4');
+    assert.equal(p4.newPrice, 500, 'el mínimo es una unidad de redondeo');
+  });
+
+  it('un precio a mano pisa al calculado, también en productos que no cambiarían', async () => {
+    const response = await api.post('/api/price-updates/preview', body({ categoryId: catA.id, overrides: { [ids.P1]: 123.45 } }));
+    assert.equal(response.status, 200);
+    const p1 = response.data.items.find((item) => item.code === 'P1');
+    assert.equal(p1.newPrice, 123.45);
+    assert.equal(p1.manual, true);
+    assert.equal(response.data.items.find((item) => item.code === 'P2').manual, false);
+    assert.equal(response.data.count, 2);
+    // un producto cuyo precio igual cambia solo por el precio a mano (porcentaje que no lo toca)
+    const same = await api.post('/api/price-updates/preview', body({ categoryId: catA.id, roundTo: 1000, roundMode: 'down', overrides: { [ids.P1]: 100 } }));
+    assert.equal(same.data.items.find((item) => item.code === 'P1').changed, false, 'si el precio a mano es igual al actual, no cambia');
+  });
+
+  it('valida los precios a mano', async () => {
+    for (const overrides of [{ [ids.P1]: 0 }, { [ids.P1]: -5 }, { [ids.P1]: '12' }, { [ids.P1]: 200000000 }, { abc: 10 }, [1, 2], 'x']) {
+      assert.equal((await api.post('/api/price-updates/preview', body({ overrides }))).status, 400, JSON.stringify(overrides));
+    }
+  });
+
+  it('aplica los precios a mano con el redondeo elegido, y se pueden deshacer', async () => {
+    const category = (await api.post('/api/categories', { name: 'C' })).data;
+    const q1 = (await product(api, 'Q1', 100, 60, 5, { categoryId: category.id })).data.id;
+    await product(api, 'Q2', 250.5, 100, 5, { categoryId: category.id });
+    const params = { percent: 10, categoryId: category.id, roundTo: 50, roundMode: 'down', overrides: { [q1]: 99.9 } };
+    const shown = (await api.post('/api/price-updates/preview', params)).data;
+    assert.equal(shown.count, 2);
+    const applied = await api.post('/api/price-updates', { ...params, expectedCount: shown.count });
+    assert.equal(applied.status, 201);
+    assert.equal((await price('Q1')).sale_price, 9990, 'precio exacto elegido a mano');
+    assert.equal((await price('Q2')).sale_price, 25000, '275,55 hacia abajo a $50');
+
+    const batch = (await api.get('/api/price-updates')).data.find((item) => item.id === applied.data.batchId);
+    assert.equal(batch.roundMode, 'down');
+    assert.equal(batch.canUndo, true);
+    assert.deepEqual((await api.post(`/api/price-updates/${batch.id}/undo`)).data, { restored: 2, skipped: 0 });
+    assert.equal((await price('Q1')).sale_price, 10000);
+    assert.equal((await price('Q2')).sale_price, 25050);
+  });
 });

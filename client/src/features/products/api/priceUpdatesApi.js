@@ -1,14 +1,15 @@
 import api from '../../../services/api';
 
-// Body de las llamadas: { percent, categoryId?, roundTo?, costPercent? }
+// Body de las llamadas: { percent, categoryId?, roundTo?, roundMode?, costPercent?, overrides? }
+// roundMode: nearest | down | up. overrides: { [idProducto]: precio exacto en pesos } (precios cambiados a mano).
 
-// Vista previa (no cambia nada): { scopeCount, count, unchanged, items: [{ id, code, name, oldPrice, newPrice, oldCost, newCost }], truncated }
+// Vista previa (no cambia nada): { scopeCount, count, unchanged, items: [{ id, code, name, oldPrice, newPrice, oldCost, newCost, manual, changed }], truncated }
 export const previewPriceUpdate = (body) => api.post('/price-updates/preview', body).then((res) => res.data);
 
 // Aplica los cambios. `expectedCount` = productos que mostró la vista previa. → { batchId, count }
 export const applyPriceUpdate = (body) => api.post('/price-updates', body).then((res) => res.data);
 
-// Historial: [{ id, createdAt, percent, costPercent, categoryName, roundTo, count, undone, userName, canUndo }]
+// Historial: [{ id, createdAt, percent, costPercent, categoryName, roundTo, roundMode, count, undone, userName, canUndo }]
 export const fetchPriceUpdates = () => api.get('/price-updates').then((res) => res.data);
 
 // Deshace la última actualización → { restored, skipped }

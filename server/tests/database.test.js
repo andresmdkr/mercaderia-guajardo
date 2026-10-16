@@ -41,6 +41,7 @@ describe('base de datos SQLite', () => {
       assert.match(runScript('src/scripts/migrate.js', ['up'], env).stdout, /No hay migraciones pendientes/);
       assert.match(runScript('src/scripts/migrate.js', ['status'], env).stdout, /Pendientes: \(ninguna\)/);
       // "down" deshace de a una, empezando por la más nueva.
+      assert.match(runScript('src/scripts/migrate.js', ['down'], env).stdout, /Deshecha: 20261016000000-price-round-mode\.js/);
       assert.match(runScript('src/scripts/migrate.js', ['down'], env).stdout, /Deshecha: 20261001000000-price-updates\.js/);
       assert.match(runScript('src/scripts/migrate.js', ['down'], env).stdout, /Deshecha: 20260929000000-baseline\.js/);
       assert.match(runScript('src/scripts/migrate.js', ['down'], env).stdout, /No hay migraciones para deshacer/);

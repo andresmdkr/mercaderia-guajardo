@@ -29,7 +29,7 @@ Funciona sin internet, guarda todo en un único archivo local y se actualiza sol
 - Búsqueda que **ignora mayúsculas y tildes** ("taragui" encuentra "Taragüí"), filtros por categoría y por stock bajo.
 - Cada entrada, salida o ajuste queda registrado: quién, cuándo, cuánto, el saldo antes y después, y el motivo.
 - **Movimiento múltiple**: carga o descuenta stock de hasta 200 productos en un solo paso, todo o nada.
-- **Actualización masiva de precios** por porcentaje, a todos los productos o a una categoría, con redondeo, vista previa, historial y **deshacer**.
+- **Actualización masiva de precios** por porcentaje, a todos los productos o a una categoría, con redondeo (al más cercano, hacia abajo o hacia arriba), vista previa donde se puede **fijar a mano el precio exacto** de cualquier producto, historial y **deshacer**.
 
 <p align="center">
   <img src="docs/screenshots/productos.png" alt="Productos" width="49%">

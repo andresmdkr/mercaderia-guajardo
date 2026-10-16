@@ -6,23 +6,28 @@ const { dbDate } = require('../utils/dbDate');
 // Actualización masiva de precios. Todo se calcula con enteros (centavos y centésimas de punto): nada de float en la base.
 // Cada operación queda como un lote con lo que cambió en cada producto, para poder deshacerla.
 
-const PREVIEW_LIMIT = 100; // filas que se muestran en la vista previa (el conteo es de todos)
+const PREVIEW_LIMIT = 300; // filas que se muestran en la vista previa (el conteo es de todos)
 const centsToPesos = (cents) => cents / 100;
 
+const ROUNDERS = { nearest: Math.round, down: Math.floor, up: Math.ceil };
+
 // Precio nuevo en centavos: el precio × (1 + porcentaje), redondeado al múltiplo de `roundTo` pesos (0 = sin redondear).
+// `roundMode`: al más cercano, hacia abajo o hacia arriba.
 // Nunca queda en cero un precio que tenía valor (con redondeo, el mínimo es una unidad).
-function applyPercent(cents, percentBp, roundTo) {
+function applyPercent(cents, percentBp, roundTo, roundMode = 'nearest') {
   let next = Math.round((cents * (10000 + percentBp)) / 10000);
   if (roundTo > 0) {
     const unit = roundTo * 100;
-    next = Math.round(next / unit) * unit;
+    next = ROUNDERS[roundMode](next / unit) * unit;
     if (next === 0 && cents > 0 && percentBp > -10000) next = unit;
   }
   return Math.max(0, next);
 }
 
-// Productos alcanzados (todos, o los de una categoría) con los precios nuevos calculados. Los que no cambian, se descartan.
-async function computeChanges({ percentBp, costPercentBp, categoryId, roundTo }, transaction) {
+// Productos alcanzados (todos, o los de una categoría) con los precios nuevos calculados.
+// `overrides` (id de producto → precio de venta exacto en centavos) pisa el precio calculado de esos productos.
+// `all` son todos los alcanzados; `changes`, solo los que cambian.
+async function computeChanges({ percentBp, costPercentBp, categoryId, roundTo, roundMode, overrides = {} }, transaction) {
   const rows = await sequelize.query(
     `SELECT p.id, p.code, p.name, p.sale_price AS salePrice, p.cost_price AS costPrice
      FROM products p
@@ -31,19 +36,23 @@ async function computeChanges({ percentBp, costPercentBp, categoryId, roundTo },
     { replacements: { categoryId: categoryId ?? null }, type: QueryTypes.SELECT, transaction }
   );
 
+  const all = [];
   const changes = [];
   for (const row of rows) {
-    const newPrice = applyPercent(row.salePrice, percentBp, roundTo);
+    const manual = Object.prototype.hasOwnProperty.call(overrides, row.id);
+    const newPrice = manual ? overrides[row.id] : applyPercent(row.salePrice, percentBp, roundTo, roundMode);
     const newCost = costPercentBp === null ? row.costPrice : applyPercent(row.costPrice, costPercentBp, 0);
-    if (newPrice !== row.salePrice || newCost !== row.costPrice) {
-      changes.push({ ...row, newPrice, newCost });
-    }
+    const item = { ...row, newPrice, newCost, manual };
+    all.push(item);
+    if (newPrice !== row.salePrice || newCost !== row.costPrice) changes.push(item);
   }
-  return { scopeCount: rows.length, changes };
+  return { scopeCount: rows.length, all, changes };
 }
 
 const toPreviewItem = (change) => ({
   id: change.id,
+  manual: change.manual,
+  changed: change.newPrice !== change.salePrice || change.newCost !== change.costPrice,
   code: change.code,
   name: change.name,
   oldPrice: centsToPesos(change.salePrice),
@@ -62,16 +71,17 @@ async function assertCategory(categoryId) {
   return category.name;
 }
 
-// Vista previa: no cambia nada. Devuelve cuántos productos se modificarían y las primeras filas.
+// Vista previa: no cambia nada. Devuelve cuántos productos se modificarían y las primeras filas
+// (también las de los que no cambian, para poder fijarles un precio a mano).
 async function preview(params) {
   await assertCategory(params.categoryId);
-  const { scopeCount, changes } = await computeChanges(params);
+  const { scopeCount, all, changes } = await computeChanges(params);
   return {
     scopeCount,
     count: changes.length,
     unchanged: scopeCount - changes.length,
-    items: changes.slice(0, PREVIEW_LIMIT).map(toPreviewItem),
-    truncated: changes.length > PREVIEW_LIMIT,
+    items: all.slice(0, PREVIEW_LIMIT).map(toPreviewItem),
+    truncated: all.length > PREVIEW_LIMIT,
   };
 }
 
@@ -89,10 +99,10 @@ async function apply(params, { expectedCount, userId }) {
 
     const now = dbDate();
     await sequelize.query(
-      `INSERT INTO price_batches (user_id, percent_bp, cost_percent_bp, category_name, round_to, changed_count, created_at, updated_at)
-       VALUES (:userId, :percentBp, :costPercentBp, :categoryName, :roundTo, :count, :now, :now)`,
+      `INSERT INTO price_batches (user_id, percent_bp, cost_percent_bp, category_name, round_to, round_mode, changed_count, created_at, updated_at)
+       VALUES (:userId, :percentBp, :costPercentBp, :categoryName, :roundTo, :roundMode, :count, :now, :now)`,
       {
-        replacements: { userId, percentBp: params.percentBp, costPercentBp: params.costPercentBp, categoryName, roundTo: params.roundTo, count: changes.length, now },
+        replacements: { userId, percentBp: params.percentBp, costPercentBp: params.costPercentBp, categoryName, roundTo: params.roundTo, roundMode: params.roundMode, count: changes.length, now },
         transaction,
       }
     );
@@ -121,7 +131,7 @@ async function apply(params, { expectedCount, userId }) {
 async function listBatches({ limit = 10 } = {}) {
   const rows = await sequelize.query(
     `SELECT b.id, b.created_at AS createdAt, b.percent_bp AS percentBp, b.cost_percent_bp AS costPercentBp,
-            b.category_name AS categoryName, b.round_to AS roundTo, b.changed_count AS count,
+            b.category_name AS categoryName, b.round_to AS roundTo, b.round_mode AS roundMode, b.changed_count AS count,
             b.undone_at AS undoneAt, u.name AS userName
      FROM price_batches b JOIN users u ON u.id = b.user_id
      ORDER BY b.id DESC LIMIT :limit`,
@@ -135,6 +145,7 @@ async function listBatches({ limit = 10 } = {}) {
     costPercent: row.costPercentBp === null ? null : row.costPercentBp / 100,
     categoryName: row.categoryName,
     roundTo: row.roundTo,
+    roundMode: row.roundMode,
     count: row.count,
     undone: Boolean(row.undoneAt),
     userName: row.userName,

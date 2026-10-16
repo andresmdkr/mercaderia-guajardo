@@ -8,6 +8,7 @@ export function toRequestBody(values) {
     percent: Number(values.percent),
     categoryId: values.categoryId || null,
     roundTo: Number(values.roundTo),
+    roundMode: values.roundMode,
     costPercent: values.adjustCost ? Number(values.percent) : undefined,
   };
 }
@@ -53,6 +54,16 @@ export default function usePriceUpdates() {
       setPreview({ body, result: await previewPriceUpdate(body) });
     });
 
+  // Fija (o, con null, quita) el precio exacto de un producto y vuelve a pedir la vista previa: el servidor recalcula todo.
+  const setOverride = (productId, price) =>
+    run(async () => {
+      const overrides = { ...preview.body.overrides };
+      if (price === null) delete overrides[productId];
+      else overrides[productId] = price;
+      const body = { ...preview.body, overrides: Object.keys(overrides).length > 0 ? overrides : undefined };
+      setPreview({ body, result: await previewPriceUpdate(body) });
+    });
+
   // Aplica lo que mostró la vista previa. Devuelve { count } o null si falló.
   const apply = () =>
     run(async () => {
@@ -69,5 +80,5 @@ export default function usePriceUpdates() {
       return outcome;
     });
 
-  return { history, preview, busy, error, showPreview, clearPreview, apply, undo };
+  return { history, preview, busy, error, showPreview, clearPreview, setOverride, apply, undo };
 }
