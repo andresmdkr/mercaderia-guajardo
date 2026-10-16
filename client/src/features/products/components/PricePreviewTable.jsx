@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import { Alert, Box, Button, InputAdornment, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import SearchIcon from '@mui/icons-material/SearchOutlined';
 import DiscardIcon from '@mui/icons-material/DeleteSweepOutlined';
 import { formatInteger } from '../../../utils/format';
+import { normalizeText } from '../../../utils/text';
 import PriceRow from './PriceRow';
 
 const PAGE_SIZE = 50; // filas que se dibujan por vez: con cientos de casilleros editables la pantalla se pone lenta en una PC vieja
@@ -11,7 +13,16 @@ const PAGE_SIZE = 50; // filas que se dibujan por vez: con cientos de casilleros
 export default function PricePreviewTable({ preview, showCost, busy, onApply, onOverride, onDiscardManual }) {
   const { count, unchanged, items, truncated } = preview;
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [query, setQuery] = useState('');
   const manualCount = items.filter((item) => item.manual).length;
+
+  // Buscador: filtra la lista que se ve (no cambia a qué productos se aplica el cambio).
+  const needle = normalizeText(query.trim());
+  const shown = needle ? items.filter((item) => normalizeText(`${item.name} ${item.code}`).includes(needle)) : items;
+  const handleQuery = (event) => {
+    setQuery(event.target.value);
+    setVisible(PAGE_SIZE);
+  };
 
   // Función estable para que las filas que no cambiaron no se vuelvan a dibujar.
   const latest = useRef(onOverride);
@@ -47,6 +58,18 @@ export default function PricePreviewTable({ preview, showCost, busy, onApply, on
         )}
       </Box>
 
+      <TextField
+        size="small"
+        value={query}
+        onChange={handleQuery}
+        placeholder="Buscar un producto de la lista"
+        sx={{ mb: 1.5, width: { xs: '100%', sm: 320 } }}
+        slotProps={{
+          htmlInput: { 'aria-label': 'Buscar un producto de la lista' },
+          input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> },
+        }}
+      />
+
       <TableContainer sx={{ maxHeight: 420 }}>
         <Table size="small" stickyHeader>
           <TableHead>
@@ -61,21 +84,29 @@ export default function PricePreviewTable({ preview, showCost, busy, onApply, on
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.slice(0, visible).map((item) => (
+            {shown.slice(0, visible).map((item) => (
               <PriceRow key={item.id} item={item} showCost={showCost} busy={busy} onOverride={handleOverride} />
             ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {visible < items.length && (
-        <Box sx={{ mt: 1 }}>
+      {needle && shown.length === 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Ningún producto de la lista coincide con «{query.trim()}».
+        </Typography>
+      )}
+      {visible < shown.length && (
+        <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <Button size="small" onClick={() => setVisible((current) => current + PAGE_SIZE)}>
-            Mostrar más productos ({formatInteger(items.length - visible)} más)
+            Mostrar más productos ({formatInteger(shown.length - visible)} más)
+          </Button>
+          <Button size="small" onClick={() => setVisible(shown.length)}>
+            Mostrar todos
           </Button>
         </Box>
       )}
-      {truncated && visible >= items.length && (
+      {truncated && visible >= shown.length && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
           Se muestran los primeros {formatInteger(items.length)}. El cambio se aplica a los {formatInteger(count)}.
         </Typography>

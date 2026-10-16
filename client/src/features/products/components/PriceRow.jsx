@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { IconButton, TableCell, TableRow, Tooltip, Typography, alpha } from '@mui/material';
+import { Box, IconButton, TableCell, TableRow, Tooltip, Typography, alpha } from '@mui/material';
 import ArrowIcon from '@mui/icons-material/ArrowForwardOutlined';
 import UndoIcon from '@mui/icons-material/UndoOutlined';
 import { formatMoney } from '../../../utils/format';
@@ -28,21 +28,23 @@ function PriceRow({ item, showCost, busy, onOverride }) {
       <TableCell align="center" sx={{ px: 0 }}>
         <ArrowIcon fontSize="small" color="disabled" sx={{ verticalAlign: 'middle' }} />
       </TableCell>
-      <TableCell sx={{ whiteSpace: 'nowrap' }}>
-        <PriceCell key={`${item.id}-${item.newPrice}`} item={item} busy={busy} onCommit={(price) => onOverride(item.id, price)} />
-        <Tooltip title="Volver al precio calculado">
-          <span>
-            <IconButton
-              size="small"
-              aria-label={`Volver al precio calculado de ${item.name}`}
-              disabled={busy || !item.manual}
-              onClick={() => onOverride(item.id, null)}
-              sx={{ ml: 0.5, verticalAlign: 'middle', visibility: item.manual ? 'visible' : 'hidden' }}
-            >
-              <UndoIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
+      <TableCell>
+        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap' }}>
+          <PriceCell key={`${item.id}-${item.newPrice}`} item={item} busy={busy} onCommit={(price) => onOverride(item.id, price)} />
+          <Tooltip title="Volver al precio calculado">
+            <span>
+              <IconButton
+                size="small"
+                aria-label={`Volver al precio calculado de ${item.name}`}
+                disabled={busy || !item.manual}
+                onClick={() => onOverride(item.id, null)}
+                sx={{ ml: 0.5, visibility: item.manual ? 'visible' : 'hidden' }}
+              >
+                <UndoIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
       </TableCell>
       <TableCell align="center">
         <PriceVariation oldPrice={item.oldPrice} newPrice={item.newPrice} />

@@ -6,7 +6,7 @@ const { dbDate } = require('../utils/dbDate');
 // Actualización masiva de precios. Todo se calcula con enteros (centavos y centésimas de punto): nada de float en la base.
 // Cada operación queda como un lote con lo que cambió en cada producto, para poder deshacerla.
 
-const PREVIEW_LIMIT = 300; // filas que se muestran en la vista previa (el conteo es de todos)
+const PREVIEW_LIMIT = 2000; // filas que se muestran en la vista previa (el conteo es de todos)
 const centsToPesos = (cents) => cents / 100;
 
 const ROUNDERS = { nearest: Math.round, down: Math.floor, up: Math.ceil };

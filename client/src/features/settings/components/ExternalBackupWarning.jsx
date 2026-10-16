@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Alert, Button } from '@mui/material';
-import { fetchExternalBackup } from '../api/settingsApi';
+import { createBackup, fetchExternalBackup } from '../api/settingsApi';
 import { externalWarningText } from '../backupWarnings';
 
 const DISMISS_KEY = 'externalBackupWarningDismissedAt';
@@ -22,6 +22,8 @@ function recentlyDismissed() {
 export default function ExternalBackupWarning() {
   const [external, setExternal] = useState(null);
   const [hidden, setHidden] = useState(recentlyDismissed);
+  const [copying, setCopying] = useState(false);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,6 +34,20 @@ export default function ExternalBackupWarning() {
       cancelled = true;
     };
   }, []);
+
+  // Hace la copia ya (si hay carpeta externa, también se copia ahí) y vuelve a mirar el estado.
+  const copyNow = async () => {
+    setCopying(true);
+    try {
+      await createBackup();
+      setExternal(await fetchExternalBackup());
+      setDone(true);
+    } catch {
+      setDone(false);
+    } finally {
+      setCopying(false);
+    }
+  };
 
   const text = externalWarningText(external, { short: true });
   if (!text || hidden) return null;
@@ -52,6 +68,9 @@ export default function ExternalBackupWarning() {
       sx={{ mb: 2.5, py: 0, alignItems: 'center', '& .MuiAlert-message': { py: 0.75, fontSize: 13 }, '& .MuiAlert-icon': { py: 0.75, fontSize: 20 }, '& .MuiAlert-action': { py: 0.25 } }}
       action={
         <>
+          <Button color="inherit" size="small" onClick={copyNow} disabled={copying} sx={{ whiteSpace: 'nowrap' }}>
+            {copying ? 'Copiando…' : 'Hacer copia ahora'}
+          </Button>
           <Button color="inherit" size="small" component={RouterLink} to="/settings" sx={{ whiteSpace: 'nowrap' }}>
             Configurar
           </Button>
@@ -61,7 +80,7 @@ export default function ExternalBackupWarning() {
         </>
       }
     >
-      {text}
+      {done ? `${text} (Se hizo una copia en esta PC.)` : text}
     </Alert>
   );
 }

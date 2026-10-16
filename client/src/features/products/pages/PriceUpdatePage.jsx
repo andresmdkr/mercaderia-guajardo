@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBlocker } from 'react-router-dom';
 import { Alert, Box, Snackbar } from '@mui/material';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import PageHeader from '../../../components/PageHeader';
@@ -37,6 +38,10 @@ export default function PriceUpdatePage() {
 
   const count = updates.preview?.result.count ?? 0;
 
+  // Si hay precios puestos a mano sin aplicar, avisa antes de irse a otra pantalla (se perderían).
+  const hasUnsavedEdits = Object.keys(updates.preview?.body.overrides ?? {}).length > 0;
+  const leaving = useBlocker(({ currentLocation, nextLocation }) => hasUnsavedEdits && currentLocation.pathname !== nextLocation.pathname);
+
   return (
     <>
       <PageHeader sectionKey="prices" title="Actualizar precios" />
@@ -60,6 +65,15 @@ export default function PriceUpdatePage() {
         <PriceHistoryCard items={updates.history} busy={updates.busy} onUndo={setUndoing} />
       </Box>
 
+      {leaving.state === 'blocked' && (
+        <ConfirmDialog
+          title="¿Salir sin aplicar?"
+          message="Pusiste precios a mano que todavía no se aplicaron. Si salís ahora, se pierden."
+          confirmLabel="Salir sin aplicar"
+          onConfirm={() => leaving.proceed()}
+          onCancel={() => leaving.reset()}
+        />
+      )}
       {confirming && (
         <ConfirmDialog
           title="Aplicar los cambios"
