@@ -32,6 +32,16 @@ describe('base de datos SQLite', () => {
     }
   });
 
+  it('al arrancar actualiza las estadísticas de la base (acelera los reportes con muchas ventas)', async () => {
+    const server = await startTestServer();
+    try {
+      const table = await server.db.get("SELECT name FROM sqlite_master WHERE name = 'sqlite_stat1'");
+      assert.equal(table?.name, 'sqlite_stat1');
+    } finally {
+      await server.close();
+    }
+  });
+
   it('migrar, deshacer y volver a migrar funciona y es repetible', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mg-mig-'));
     const env = { DB_FILE: path.join(dir, 'mig.sqlite') };

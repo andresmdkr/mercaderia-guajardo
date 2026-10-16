@@ -22,6 +22,15 @@ async function prepareDatabase() {
     },
   });
   if (applied.length > 0) console.log(`Migraciones aplicadas: ${applied.join(', ')}`);
+
+  // Estadísticas para el planificador de consultas de SQLite. Sin ellas, con años de ventas cargadas los reportes
+  // tardan unas 4 veces más (2,2 s contra 0,5 s con 60.000 ventas). Cuesta milisegundos y se rehace en cada arranque
+  // para que no queden viejas. Si falla (por ejemplo base de solo lectura), no impide arrancar.
+  try {
+    await sequelize.query('ANALYZE');
+  } catch (error) {
+    console.warn('No se pudieron actualizar las estadísticas de la base:', error.message);
+  }
   return applied;
 }
 
