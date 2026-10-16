@@ -53,6 +53,7 @@ export default function PriceUpdatePage() {
             busy={updates.busy}
             onApply={() => setConfirming(true)}
             onOverride={updates.setOverride}
+            onDiscardManual={updates.discardManual}
           />
         )}
 

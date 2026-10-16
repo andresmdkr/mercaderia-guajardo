@@ -64,6 +64,13 @@ export default function usePriceUpdates() {
       setPreview({ body, result: await previewPriceUpdate(body) });
     });
 
+  // Descarta todos los precios puestos a mano y vuelve a los calculados.
+  const discardManual = () =>
+    run(async () => {
+      const body = { ...preview.body, overrides: undefined };
+      setPreview({ body, result: await previewPriceUpdate(body) });
+    });
+
   // Aplica lo que mostró la vista previa. Devuelve { count } o null si falló.
   const apply = () =>
     run(async () => {
@@ -80,5 +87,5 @@ export default function usePriceUpdates() {
       return outcome;
     });
 
-  return { history, preview, busy, error, showPreview, clearPreview, setOverride, apply, undo };
+  return { history, preview, busy, error, showPreview, clearPreview, setOverride, discardManual, apply, undo };
 }

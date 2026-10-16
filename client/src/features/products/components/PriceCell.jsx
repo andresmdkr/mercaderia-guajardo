@@ -27,7 +27,7 @@ export default function PriceCell({ item, busy, onCommit }) {
       size="small"
       disabled={busy}
       slotProps={{
-        htmlInput: { step: 'any', min: 0, 'aria-label': `Precio nuevo de ${item.name}`, style: { textAlign: 'right', fontWeight: item.manual ? 700 : 600, width: 110 } },
+        htmlInput: { step: 'any', min: 0, 'aria-label': `Precio nuevo de ${item.name}`, style: { textAlign: 'right', fontWeight: item.manual ? 700 : 600, width: 90 } },
         input: { startAdornment: '$ ' },
       }}
       color={item.manual ? 'warning' : 'primary'}

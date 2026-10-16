@@ -1,13 +1,16 @@
-import { Alert, Box, Button, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography, alpha } from '@mui/material';
+import ArrowIcon from '@mui/icons-material/ArrowForwardOutlined';
+import DiscardIcon from '@mui/icons-material/DeleteSweepOutlined';
 import UndoIcon from '@mui/icons-material/UndoOutlined';
 import { formatInteger, formatMoney } from '../../../utils/format';
 import PriceCell from './PriceCell';
+import PriceVariation from './PriceVariation';
 
 // Vista previa: cómo quedarían los precios. Todavía no se cambió nada.
-// El "Precio nuevo" se puede escribir a mano para fijar un precio exacto en un producto.
-export default function PricePreviewTable({ preview, showCost, busy, onApply, onOverride }) {
+// Cada fila: precio actual (tachado) → precio nuevo (se puede escribir uno exacto) y la variación.
+export default function PricePreviewTable({ preview, showCost, busy, onApply, onOverride, onDiscardManual }) {
   const { count, unchanged, items, truncated } = preview;
-  const hasManual = items.some((item) => item.manual);
+  const manualCount = items.filter((item) => item.manual).length;
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -15,7 +18,7 @@ export default function PricePreviewTable({ preview, showCost, busy, onApply, on
         2. Revisá los cambios
       </Typography>
 
-      {count === 0 && !hasManual && (
+      {count === 0 && manualCount === 0 && (
         <Alert severity="info" sx={{ mb: 2 }}>
           Con esos valores ningún precio cambia (por el redondeo o porque el porcentaje es muy chico). Igual podés escribir un precio a mano abajo.
         </Alert>
@@ -25,45 +28,62 @@ export default function PricePreviewTable({ preview, showCost, busy, onApply, on
         Se van a cambiar los precios de <strong>{formatInteger(count)}</strong> {count === 1 ? 'producto' : 'productos'}
         {unchanged > 0 && ` (${formatInteger(unchanged)} no cambian)`}. Todavía no se modificó nada.
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Si querés un precio exacto en algún producto, escribilo en la columna <strong>Precio nuevo</strong> y apretá Enter.
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          Para un precio exacto en algún producto, escribilo en el casillero de la derecha y apretá Enter.
+        </Typography>
+        {manualCount > 0 && (
+          <Button size="small" color="warning" variant="outlined" startIcon={<DiscardIcon />} disabled={busy} onClick={onDiscardManual}>
+            Descartar mis correcciones a mano ({manualCount})
+          </Button>
+        )}
+      </Box>
 
       <TableContainer sx={{ maxHeight: 420 }}>
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Producto</TableCell>
-              <TableCell align="right">Precio actual</TableCell>
-              <TableCell align="right">Precio nuevo</TableCell>
+              <TableCell align="right">Precio: antes → ahora</TableCell>
+              <TableCell align="center">Variación</TableCell>
               {showCost && <TableCell align="right">Costo actual</TableCell>}
               {showCost && <TableCell align="right">Costo nuevo</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.id} hover>
+              <TableRow key={item.id} hover sx={item.manual ? { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.14), '&.MuiTableRow-hover:hover': { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.2) } } : undefined}>
                 <TableCell>
                   {item.name}
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                     {item.code}
+                    {item.manual && ' · precio puesto a mano'}
                   </Typography>
                 </TableCell>
-                <TableCell align="right">{formatMoney(item.oldPrice)}</TableCell>
                 <TableCell align="right">
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
-                    {item.manual && (
-                      <Tooltip title="Volver al precio calculado">
-                        <span>
-                          <IconButton size="small" aria-label={`Volver al precio calculado de ${item.name}`} disabled={busy} onClick={() => onOverride(item.id, null)}>
-                            <UndoIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    )}
-                    {!item.manual && !item.changed && <Chip size="small" label="sin cambio" variant="outlined" />}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+                    <Typography component="span" color="text.secondary" sx={{ textDecoration: 'line-through', whiteSpace: 'nowrap' }}>
+                      {formatMoney(item.oldPrice)}
+                    </Typography>
+                    <ArrowIcon fontSize="small" color="disabled" />
                     <PriceCell key={`${item.id}-${item.newPrice}`} item={item} busy={busy} onCommit={(price) => onOverride(item.id, price)} />
+                    <Tooltip title="Volver al precio calculado">
+                      <span>
+                        <IconButton
+                          size="small"
+                          aria-label={`Volver al precio calculado de ${item.name}`}
+                          disabled={busy || !item.manual}
+                          onClick={() => onOverride(item.id, null)}
+                          sx={{ visibility: item.manual ? 'visible' : 'hidden' }}
+                        >
+                          <UndoIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
                   </Box>
+                </TableCell>
+                <TableCell align="center">
+                  <PriceVariation oldPrice={item.oldPrice} newPrice={item.newPrice} />
                 </TableCell>
                 {showCost && <TableCell align="right">{formatMoney(item.oldCost)}</TableCell>}
                 {showCost && <TableCell align="right">{formatMoney(item.newCost)}</TableCell>}
