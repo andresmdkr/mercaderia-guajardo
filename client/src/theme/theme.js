@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material';
+import { Fade, createTheme } from '@mui/material';
 
 const SANS = '"Inter Variable", system-ui, "Segoe UI", Roboto, Arial, sans-serif';
 const SERIF = 'ui-serif, Georgia, Cambria, "Times New Roman", serif';
@@ -74,10 +74,17 @@ export function buildTheme(mode) {
           // Las filas de las tablas se recorren con Tab y se abren con Enter: el contorno va por dentro de la fila.
           'tr[tabindex]:focus-visible': { outlineOffset: -2 },
           '.MuiTableRow-hover': { transition: 'background-color 120ms ease' },
-          // Quien tiene activado "reducir movimiento" en Windows no ve animaciones.
+          // Quien tiene activado "reducir movimiento" en Windows no ve animaciones. El spinner de carga queda afuera:
+          // es la señal de que algo está cargando, y a 0,01 ms por vuelta giraría como loco.
           '@media (prefers-reduced-motion: reduce)': {
-            '*, *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important' },
+            '*:not(.MuiCircularProgress-root, .MuiCircularProgress-circle), *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important' },
           },
+          // Spinner más pausado (el de MUI da una vuelta cada 1,4 s y en una PC lenta se ve frenético).
+          '.MuiCircularProgress-root.MuiCircularProgress-indeterminate': { animationDuration: '2.2s' },
+          '.MuiCircularProgress-indeterminate .MuiCircularProgress-circle': { animationDuration: '2.2s' },
+          // Los desplegables (buscadores de producto y cliente) no se muestran hasta tener su posición: en equipos lentos
+          // se veía un instante en la esquina superior izquierda antes de ubicarse.
+          '.MuiPopper-root:not([data-popper-placement])': { visibility: 'hidden' },
         }),
       },
       // Botones, íconos, chips, ítems del menú y encabezados ordenables: mismo contorno de foco por teclado.
@@ -117,6 +124,12 @@ export function buildTheme(mode) {
         styleOverrides: { root: { textTransform: 'none', fontWeight: 600, paddingInline: 16, borderRadius: 10 } },
       },
       MuiOutlinedInput: { styleOverrides: { root: { borderRadius: 10 } } },
+      // Menús y listas desplegables: aparecen con un fundido en su lugar. El efecto de MUI (agrandarse desde una esquina)
+      // se ve a los saltos en una PC lenta y parece que el menú "viaja" desde la esquina.
+      MuiMenu: { defaultProps: { slots: { transition: Fade }, transitionDuration: 120 } },
+      MuiPopover: { defaultProps: { slots: { transition: Fade }, transitionDuration: 120 } },
+      // Posiciona con top/left en vez de transform 3D: algunas placas de video viejas dibujan mal el primer cuadro.
+      MuiPopper: { defaultProps: { popperOptions: { modifiers: [{ name: 'computeStyles', options: { gpuAcceleration: false } }] } } },
       MuiDialog: { styleOverrides: { paper: { borderRadius: 16 } } },
       MuiDrawer: { styleOverrides: { paper: { borderRadius: 0 } } },
     },
