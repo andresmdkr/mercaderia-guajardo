@@ -79,7 +79,7 @@ export default function NewSalePage() {
       )}
 
       <Grid container spacing={3} alignItems="flex-start">
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid size={{ xs: 12, md: 7, lg: 8 }}>
           <Paper sx={{ p: 2, mb: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               {/* Lo principal es buscar por nombre; el lector de código queda como opción */}
@@ -108,7 +108,7 @@ export default function NewSalePage() {
           <CartTable lines={sale.cart.lines} onQuantityChange={sale.cart.setQuantity} onRemove={sale.cart.remove} />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 4 }} sx={{ position: { md: 'sticky' }, top: { md: 24 } }}>
+        <Grid size={{ xs: 12, md: 5, lg: 4 }} sx={{ position: { md: 'sticky' }, top: { md: 24 } }}>
           <SaleSummary
             totals={sale.totals}
             discount={sale.discount}

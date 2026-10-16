@@ -48,6 +48,7 @@ export default function SaleSummary({
         exclusive
         fullWidth
         size="small"
+        sx={{ "& .MuiToggleButton-root": { px: 0.75, minWidth: 0 } }} // en ventanas angostas los tres botones tienen que entrar sin desbordar
         value={paymentMethod}
         onChange={(event, value) => value && onPaymentMethodChange(value)}
       >
