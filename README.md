@@ -72,7 +72,7 @@ El comercio usa una PC con **Windows 8.1 de 32 bits y 2 GB de RAM**, por lo que 
 - Cada versión se compila, se prueba y se publica con **GitHub Actions** al subir una etiqueta `vX.Y.Z`.
 - La ventana solo carga contenido propio; la de WhatsApp está aislada y solo puede abrir `web.whatsapp.com`.
 
-Además, `tools/whatsapp` es un pequeño programa aparte (WhatsApp Web liviano para la PC vieja) que la aplicación puede usar para abrir los chats.
+Además, `tools/whatsapp` es un pequeño programa aparte (WhatsApp Web liviano para la PC vieja) que la aplicación puede usar para abrir los chats. Se puede descargar aparte en [Releases](https://github.com/andresmdkr/mercaderia-guajardo/releases) (las versiones que empiezan con `whatsapp-v`, marcadas como pre-versión para no mezclarse con las actualizaciones de la aplicación).
 
 ## Decisiones técnicas
 
