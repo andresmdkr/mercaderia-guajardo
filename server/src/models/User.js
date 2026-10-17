@@ -7,6 +7,7 @@ module.exports = (sequelize) => {
       username: { type: DataTypes.STRING(50), allowNull: false, unique: true },
       name: { type: DataTypes.STRING(100), allowNull: false },
       passwordHash: { type: DataTypes.STRING(100), allowNull: false },
+      active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     },
     { tableName: 'users', underscored: true }
   );

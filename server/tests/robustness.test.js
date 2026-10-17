@@ -38,6 +38,7 @@ describe('robustez de la API', () => {
       ['GET', '/api/reports/top-customers'], ['GET', '/api/reports/period-summary'], ['GET', '/api/reports/low-stock'],
       ['GET', '/api/sales'], ['GET', '/api/sales/1'], ['POST', '/api/sales'], ['POST', '/api/sales/1/void'],
       ['GET', '/api/settings/business'], ['PUT', '/api/settings/business'],
+      ['GET', '/api/users'], ['POST', '/api/users'], ['PATCH', '/api/users/1/active'], ['POST', '/api/users/1/password'],
       ['GET', '/api/stock/movements'], ['POST', '/api/stock/movements'], ['POST', '/api/stock/movements/bulk'],
     ];
     const open = [];
@@ -51,7 +52,7 @@ describe('robustez de la API', () => {
   it('los listados aguantan parámetros absurdos (nunca 5xx)', async () => {
     const lists = ['/api/products', '/api/customers', '/api/sales', '/api/stock/movements', '/api/price-updates', '/api/backups',
       '/api/reports/summary', '/api/reports/top-products', '/api/reports/payment-methods', '/api/reports/top-customers',
-      '/api/reports/period-summary', '/api/reports/low-stock'];
+      '/api/reports/period-summary', '/api/reports/low-stock', '/api/users'];
     const weird = [
       'page=0', 'page=-5', 'page=abc', 'page=99999999999999999999', 'limit=0', 'limit=-1', 'limit=100000', 'limit=1.5',
       'search=%25', 'search=_', "search='", 'search=%22%20OR%201%3D1%20--', `search=${'x'.repeat(5000)}`, 'search=%00', 'search=%F0%9F%98%80',
@@ -77,6 +78,7 @@ describe('robustez de la API', () => {
         ['GET', `/api/products/${id}`], ['GET', `/api/customers/${id}`], ['GET', `/api/sales/${id}`], ['POST', `/api/sales/${id}/void`],
         ['PUT', `/api/products/${id}`], ['PATCH', `/api/products/${id}/status`], ['PUT', `/api/customers/${id}`], ['PATCH', `/api/customers/${id}/status`],
         ['PUT', `/api/categories/${id}`], ['DELETE', `/api/categories/${id}`], ['POST', `/api/price-updates/${id}/undo`],
+        ['PATCH', `/api/users/${id}/active`], ['POST', `/api/users/${id}/password`],
       ]) {
         const res = await api.request(method, url, method === 'GET' ? undefined : {});
         if (res.status >= 500) bad.push(`${method} ${url} → ${res.status}`);

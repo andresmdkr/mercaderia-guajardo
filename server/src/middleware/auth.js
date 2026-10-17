@@ -17,7 +17,7 @@ async function requireAuth(req, res, next) {
 
     // Se busca en la base para que un usuario borrado pierda el acceso enseguida.
     const user = await authController.findById(payload.sub);
-    if (!user) throw new AppError('No autenticado', 401);
+    if (!user || !user.active) throw new AppError('No autenticado', 401); // una baja corta la sesión al instante
 
     req.user = user;
     next();

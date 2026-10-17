@@ -10,6 +10,7 @@ const reportRoutes = require('./reportRoutes');
 const saleRoutes = require('./saleRoutes');
 const settingsRoutes = require('./settingsRoutes');
 const stockRoutes = require('./stockRoutes');
+const userRoutes = require('./userRoutes');
 const { requireAuth } = require('../middleware/auth');
 
 const router = Router();
@@ -25,5 +26,6 @@ router.use('/reports', requireAuth, reportRoutes);
 router.use('/sales', requireAuth, saleRoutes);
 router.use('/settings', requireAuth, settingsRoutes);
 router.use('/stock', requireAuth, stockRoutes);
+router.use('/users', requireAuth, userRoutes);
 
 module.exports = router;

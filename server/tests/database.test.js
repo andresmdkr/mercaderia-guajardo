@@ -51,6 +51,7 @@ describe('base de datos SQLite', () => {
       assert.match(runScript('src/scripts/migrate.js', ['up'], env).stdout, /No hay migraciones pendientes/);
       assert.match(runScript('src/scripts/migrate.js', ['status'], env).stdout, /Pendientes: \(ninguna\)/);
       // "down" deshace de a una, empezando por la más nueva.
+      assert.match(runScript('src/scripts/migrate.js', ['down'], env).stdout, /Deshecha: 20261017000000-users-active\.js/);
       assert.match(runScript('src/scripts/migrate.js', ['down'], env).stdout, /Deshecha: 20261016000000-price-round-mode\.js/);
       assert.match(runScript('src/scripts/migrate.js', ['down'], env).stdout, /Deshecha: 20261001000000-price-updates\.js/);
       assert.match(runScript('src/scripts/migrate.js', ['down'], env).stdout, /Deshecha: 20260929000000-baseline\.js/);
@@ -65,7 +66,10 @@ describe('base de datos SQLite', () => {
   it('una actualización con cambios de esquema hace un backup antes de migrar y conserva los datos', async () => {
     // Carpeta de migraciones de prueba: la base y, más tarde, una migración "nueva" (como en una actualización).
     const migrations = fs.mkdtempSync(path.join(os.tmpdir(), 'mg-migrations-'));
-    fs.copyFileSync(path.join(SERVER_DIR, 'migrations', '20260929000000-baseline.js'), path.join(migrations, '20260929000000-baseline.js'));
+    // Todas las migraciones que ya existen (el modelo de la app necesita el esquema completo)...
+    for (const file of fs.readdirSync(path.join(SERVER_DIR, 'migrations')).filter((name) => name.endsWith('.js'))) {
+      fs.copyFileSync(path.join(SERVER_DIR, 'migrations', file), path.join(migrations, file));
+    }
 
     const first = await startTestServer({ MIGRATIONS_DIR: migrations });
     const { dir } = first;
@@ -77,7 +81,7 @@ describe('base de datos SQLite', () => {
       await first.close({ keep: true });
 
       fs.writeFileSync(
-        path.join(migrations, '20260930000000-agrega-tabla.js'),
+        path.join(migrations, '20271231000000-agrega-tabla.js'),
         `module.exports = {
           async up(queryInterface, Sequelize, { transaction }) { await queryInterface.sequelize.query('CREATE TABLE notas (id INTEGER PRIMARY KEY, texto TEXT)', { transaction }); },
           async down(queryInterface, Sequelize, { transaction }) { await queryInterface.sequelize.query('DROP TABLE notas', { transaction }); },
@@ -87,7 +91,7 @@ describe('base de datos SQLite', () => {
       const second = await startTestServer({ MIGRATIONS_DIR: migrations }, { dir });
       try {
         assert.match(second.output(), /Backup previo a migrar/);
-        assert.match(second.output(), /Migraciones aplicadas: 20260930000000-agrega-tabla\.js/);
+        assert.match(second.output(), /Migraciones aplicadas: 20271231000000-agrega-tabla\.js/);
         const backups = fs.readdirSync(second.backupDir).filter((f) => f.includes('antes-de-migrar'));
         assert.equal(backups.length, 1);
         assert.ok(second.db, 'la base sigue abierta');

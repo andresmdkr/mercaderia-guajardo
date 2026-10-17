@@ -10,6 +10,8 @@ async function login(username, password) {
   const valid = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
 
   if (!user || !valid) throw new AppError('Usuario o contraseña incorrectos', 401);
+  // Recién después de comprobar la contraseña se dice que está de baja (si no, cualquiera podría averiguar qué usuarios existen).
+  if (!user.active) throw new AppError('Este usuario está dado de baja. Pedile a otra persona que lo reactive.', 403);
   return user;
 }
 
