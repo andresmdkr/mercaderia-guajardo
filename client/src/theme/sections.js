@@ -125,6 +125,7 @@ export const settingsMenuItem = {
   icon: SettingsIcon,
   tabs: [
     { label: 'Negocio', path: '/settings' },
+    { label: 'Usuarios', path: '/settings/users' },
     { label: 'Copias de seguridad', path: '/settings/backups' },
     { label: 'WhatsApp', path: '/settings/whatsapp', desktopOnly: true },
     { label: 'Aplicación', path: '/settings/app' },

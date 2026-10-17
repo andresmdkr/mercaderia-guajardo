@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Button } from '@mui/material';
 import DemoExitDialog from '../features/settings/components/DemoExitDialog';
 import useDemoMode from '../features/settings/hooks/useDemoMode';
-import { desktop } from '../services/desktop';
+import { hasLocalData } from '../services/desktop';
 
 // Franja fija arriba de cada pantalla mientras la app está en modo de prueba: que nadie confunda los datos de
 // ejemplo con los reales.
@@ -29,7 +29,7 @@ export default function DemoBanner() {
           '& .MuiAlert-action': { py: 0.25 },
         }}
         action={
-          desktop && (
+          hasLocalData && (
             <Button color="inherit" size="small" onClick={() => setExiting(true)} sx={{ whiteSpace: 'nowrap', fontWeight: 700 }}>
               Salir de la prueba
             </Button>

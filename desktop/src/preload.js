@@ -4,7 +4,14 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+// 'main' = esta PC guarda los datos; 'client' = segunda PC conectada a la principal (sin base propia). Se pide una sola vez, al abrir.
+const role = ipcRenderer.sendSync('desktop:get-role') === 'client' ? 'client' : 'main';
+
 contextBridge.exposeInMainWorld('desktop', {
+  role,
+  getInfo: () => ipcRenderer.invoke('desktop:get-info'),
+  setLan: (enabled) => ipcRenderer.invoke('desktop:set-lan', enabled === true),
+  disconnect: () => ipcRenderer.invoke('desktop:disconnect'),
   openBackupsFolder: () => ipcRenderer.invoke('desktop:open-backups-folder'),
   restoreBackup: (name) => ipcRenderer.invoke('desktop:restore-backup', String(name)),
   enterDemo: () => ipcRenderer.invoke('desktop:enter-demo'),

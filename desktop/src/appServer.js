@@ -4,17 +4,22 @@
 
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const http = require('node:http');
 const net = require('node:net');
+const os = require('node:os');
 const path = require('node:path');
 
-const HOST = '127.0.0.1'; // solo se puede entrar desde esta misma PC
+const LOCAL_HOST = '127.0.0.1'; // por defecto solo se puede entrar desde esta misma PC
+const LAN_HOST = '0.0.0.0'; // con "Usar desde otra computadora" prendido, también desde la red del local
 // Puerto fijo (si está libre): el navegador guarda las preferencias (modo claro/oscuro) por dirección, con puerto incluido.
 const PREFERRED_PORT = 38417;
 const SERVER_SRC = path.join(__dirname, '..', 'app', 'server', 'src');
 const CLIENT_DIST = path.join(__dirname, '..', 'app', 'client', 'dist');
 const MIGRATIONS = path.join(__dirname, '..', 'app', 'server', 'migrations');
 
-const state = { origin: null, dataDir: null, backupsDir: null, dbFile: null, mode: 'real' };
+// role: 'main' (esta PC guarda los datos) o 'client' (esta PC se conecta a la principal y no tiene base propia).
+// lan: { enabled, port } cuando esta PC es la principal y deja entrar a otras computadoras.
+const state = { origin: null, dataDir: null, backupsDir: null, dbFile: null, mode: 'real', role: 'main', serverUrl: null, lan: { enabled: false, port: null } };
 
 // config.json guarda la clave que firma las sesiones y el modo de la app ('demo' = modo de prueba).
 function readConfig(dataDir) {
@@ -52,30 +57,93 @@ const removeDatabaseFiles = (dbFile) => {
   for (const suffix of ['', '-wal', '-shm', '-journal']) fs.rmSync(dbFile + suffix, { force: true });
 };
 
-function isPortFree(port) {
+function isPortFree(port, host) {
   return new Promise((resolve) => {
     const probe = net.createServer();
     probe.once('error', () => resolve(false));
-    probe.listen(port, HOST, () => probe.close(() => resolve(true)));
+    probe.listen(port, host, () => probe.close(() => resolve(true)));
   });
 }
 
-async function findPort() {
+// Si otras PC entran por la red, el puerto tiene que ser siempre el mismo (la dirección que se escribe allá no puede cambiar).
+async function findPort(host, lan) {
+  if (lan) {
+    if (await isPortFree(PREFERRED_PORT, host)) return PREFERRED_PORT;
+    throw new Error(`El puerto ${PREFERRED_PORT} está ocupado por otro programa, y hace falta para que otra computadora se conecte. Cerrá ese programa o apagá "Usar desde otra computadora" en Configuración.`);
+  }
   for (let port = PREFERRED_PORT; port < PREFERRED_PORT + 10; port += 1) {
-    if (await isPortFree(port)) return port;
+    if (await isPortFree(port, host)) return port;
   }
   throw new Error(`No hay ningún puerto libre entre ${PREFERRED_PORT} y ${PREFERRED_PORT + 9}`);
+}
+
+// --- Conexión entre computadoras ---
+
+// Direcciones de esta PC dentro de la red del local (las que se escriben en la otra computadora).
+function lanAddresses() {
+  const result = [];
+  for (const [name, list] of Object.entries(os.networkInterfaces())) {
+    for (const item of list ?? []) {
+      if (item.family !== 'IPv4' || item.internal) continue;
+      if (!/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(item.address)) continue; // solo redes privadas (la del local)
+      result.push({ name, address: item.address });
+    }
+  }
+  return result;
+}
+
+// "192.168.1.20", "192.168.1.20:38417" o "http://pc-negocio:38417/" → "http://192.168.1.20:38417". null si no sirve.
+function normalizeServerUrl(input) {
+  if (typeof input !== 'string') return null;
+  let text = input.trim();
+  if (!text || text.length > 200) return null;
+  if (!/^https?:\/\//i.test(text)) text = `http://${text}`;
+  let url;
+  try {
+    url = new URL(text);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'http:' || url.username || url.password || !/^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$/.test(url.hostname)) return null;
+  if (url.pathname !== '/' || url.search || url.hash) return null;
+  return `http://${url.hostname}:${url.port || PREFERRED_PORT}`;
+}
+
+// ¿Hay un Mercadería Guajardo en esa dirección? Devuelve { ok, version, demo } o { ok: false, message }.
+function checkServer(origin, timeoutMs = 4000) {
+  return new Promise((resolve) => {
+    const request = http.get(`${origin}/api/version`, { timeout: timeoutMs }, (response) => {
+      let body = '';
+      response.on('data', (chunk) => (body += chunk));
+      response.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (response.statusCode === 200 && typeof data.version === 'string') return resolve({ ok: true, version: data.version, demo: data.demo === true });
+        } catch {
+          // no era nuestro servidor
+        }
+        resolve({ ok: false, message: 'En esa dirección hay algo, pero no es Mercadería Guajardo.' });
+      });
+    });
+    request.on('timeout', () => request.destroy(new Error('tiempo agotado')));
+    request.on('error', () => resolve({ ok: false, message: 'No se pudo conectar. Revisá que la PC principal esté prendida, con el programa abierto y con "Usar desde otra computadora" activado.' }));
+  });
 }
 
 // Define la configuración (variables de entorno que lee el servidor) y arranca. Devuelve { origin, port }.
 async function start({ dataDir, appVersion, log }) {
   fs.mkdirSync(dataDir, { recursive: true });
-  const port = await findPort();
+  const config = readConfig(dataDir);
+  const lan = config.lan === true;
+  const host = lan ? LAN_HOST : LOCAL_HOST;
+  const port = await findPort(host, lan);
 
   state.dataDir = dataDir;
-  state.mode = readConfig(dataDir).mode === 'demo' ? 'demo' : 'real';
+  state.role = 'main';
+  state.mode = config.mode === 'demo' ? 'demo' : 'real';
+  state.lan = { enabled: lan, port };
   Object.assign(state, locations(dataDir, state.mode));
-  state.origin = `http://${HOST}:${port}`;
+  state.origin = `http://${LOCAL_HOST}:${port}`; // esta PC siempre se conecta a sí misma por la dirección local
 
   Object.assign(process.env, {
     NODE_ENV: 'production',
@@ -91,8 +159,8 @@ async function start({ dataDir, appVersion, log }) {
   });
 
   const { startServer } = require(path.join(SERVER_SRC, 'server.js'));
-  const server = await startServer({ port, host: HOST });
-  log(`servidor local en ${state.origin} · base ${state.dbFile}`);
+  const server = await startServer({ port, host });
+  log(`servidor en ${host}:${port} (${lan ? 'abierto a la red del local' : 'solo esta PC'}) · base ${state.dbFile}`);
 
   // Una copia por día: al abrir la aplicación, si la última tiene más de 20 horas. Si falla, se sigue igual.
   // (En la demo no: son datos de ejemplo y se regeneran cuando se quiere.)
@@ -107,6 +175,17 @@ async function start({ dataDir, appVersion, log }) {
   }
 
   return { server, origin: state.origin, port };
+}
+
+// Modo conexión: esta PC no arranca servidor ni base; muestra la pantalla de la PC principal. Devuelve { origin }.
+function startRemote({ dataDir, serverUrl }) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  state.dataDir = dataDir;
+  state.role = 'client';
+  state.serverUrl = serverUrl;
+  state.origin = new URL(serverUrl).origin;
+  state.lan = { enabled: false, port: null };
+  return { origin: state.origin };
 }
 
 // Restaura una copia. Devuelve { ok, message }. Si sale bien, quien llama tiene que reiniciar la aplicación.
@@ -185,7 +264,7 @@ async function exitDemo({ fresh }, log) {
 
 // Cierra la base ordenadamente. Salir con la base abierta hace caer al módulo nativo de SQLite al terminar el proceso.
 async function close() {
-  if (!state.origin) return;
+  if (!state.origin || state.role === 'client') return; // en modo conexión no hay base propia
   try {
     await require(path.join(SERVER_SRC, 'db.js')).sequelize.close();
   } catch {
@@ -195,4 +274,4 @@ async function close() {
 
 const getState = () => ({ ...state });
 
-module.exports = { start, restoreBackup, enterDemo, exitDemo, close, getState, readConfig, writeConfig };
+module.exports = { start, startRemote, lanAddresses, normalizeServerUrl, checkServer, LOCAL_HOST, PREFERRED_PORT, restoreBackup, enterDemo, exitDemo, close, getState, readConfig, writeConfig };

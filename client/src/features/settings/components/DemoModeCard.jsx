@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
 import ScienceIcon from '@mui/icons-material/ScienceOutlined';
-import { desktop } from '../../../services/desktop';
+import { hasLocalData } from '../../../services/desktop';
 import useDemoMode from '../hooks/useDemoMode';
 import DemoExitDialog from './DemoExitDialog';
 import EnterDemoButton from './EnterDemoButton';
@@ -12,7 +12,7 @@ export default function DemoModeCard() {
   const demo = useDemoMode();
   const [exiting, setExiting] = useState(false);
 
-  if (!desktop || demo === null) return null;
+  if (!hasLocalData || demo === null) return null;
 
   return (
     <SettingsCard

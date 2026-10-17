@@ -7,6 +7,8 @@ import BackupsCard from '../components/BackupsCard';
 import BusinessForm from '../components/BusinessForm';
 import ChangePasswordForm from '../components/ChangePasswordForm';
 import DemoModeCard from '../components/DemoModeCard';
+import NetworkCard from '../components/NetworkCard';
+import UsersCard from '../components/UsersCard';
 import WhatsAppCard from '../components/WhatsAppCard';
 import useAppVersion from '../hooks/useAppVersion';
 import useBusinessSettings from '../hooks/useBusinessSettings';
@@ -36,11 +38,13 @@ export default function SettingsPage() {
             <ChangePasswordForm onChanged={() => setMessage('Contraseña actualizada')} />
           </>
         )}
+        {tab === 'users' && <UsersCard onMessage={setMessage} />}
         {tab === 'backups' && <BackupsCard onMessage={setMessage} />}
         {tab === 'whatsapp' && <WhatsAppCard />}
         {tab === 'app' && (
           <>
             <AboutCard version={version} onMessage={setMessage} />
+            <NetworkCard onMessage={setMessage} />
             <DemoModeCard />
           </>
         )}

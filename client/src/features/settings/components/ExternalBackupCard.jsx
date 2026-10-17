@@ -3,7 +3,7 @@ import { Alert, Box, Button, TextField, Typography } from '@mui/material';
 import SaveIcon from '@mui/icons-material/SaveAltOutlined';
 import FolderIcon from '@mui/icons-material/CreateNewFolderOutlined';
 import { getErrorMessage } from '../../../services/api';
-import { desktop } from '../../../services/desktop';
+import { desktop, isClientPc } from '../../../services/desktop';
 import { formatDateTime } from '../../../utils/format';
 import { externalWarningText } from '../backupWarnings';
 import useDemoMode from '../hooks/useDemoMode';
@@ -65,7 +65,13 @@ export default function ExternalBackupCard({ external, onChange, onMessage }) {
         </Typography>
       )}
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-start' }}>
+      {isClientPc && (
+        <Typography variant="body2" color="text.secondary">
+          La copia en un pendrive o en la nube se configura en la PC principal, que es la que guarda los datos.
+        </Typography>
+      )}
+
+      <Box sx={{ display: isClientPc ? 'none' : 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-start' }}>
         {desktop ? (
           <Button variant="outlined" startIcon={<FolderIcon />} onClick={handleChoose} disabled={saving}>
             {external?.folder ? 'Cambiar carpeta' : 'Elegir carpeta'}

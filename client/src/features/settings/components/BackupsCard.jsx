@@ -17,7 +17,7 @@ import BackupIcon from '@mui/icons-material/BackupOutlined';
 import FolderOpenIcon from '@mui/icons-material/FolderOpenOutlined';
 import RestoreIcon from '@mui/icons-material/RestoreOutlined';
 import ConfirmDialog from '../../../components/ConfirmDialog';
-import { desktop } from '../../../services/desktop';
+import { desktop, hasLocalData } from '../../../services/desktop';
 import { formatBytes, formatDateTime } from '../../../utils/format';
 import { BACKUP_KINDS } from '../backupKinds';
 import ExternalBackupCard from './ExternalBackupCard';
@@ -60,7 +60,7 @@ export default function BackupsCard({ onMessage }) {
         <Button variant="contained" startIcon={creating ? <CircularProgress size={16} color="inherit" /> : <BackupIcon />} onClick={handleCreate} disabled={creating}>
           Hacer una copia ahora
         </Button>
-        {desktop && (
+        {hasLocalData && (
           <Button startIcon={<FolderOpenIcon />} onClick={() => desktop.openBackupsFolder()}>
             Abrir la carpeta
           </Button>
@@ -79,13 +79,13 @@ export default function BackupsCard({ onMessage }) {
               <TableCell>Fecha</TableCell>
               <TableCell>Tipo</TableCell>
               <TableCell align="right">Tamaño</TableCell>
-              {desktop && <TableCell />}
+              {hasLocalData && <TableCell />}
             </TableRow>
           </TableHead>
           <TableBody>
             {!loading && items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={desktop ? 4 : 3} align="center">
+                <TableCell colSpan={hasLocalData ? 4 : 3} align="center">
                   <Typography color="text.secondary" sx={{ py: 2 }}>
                     Todavía no hay copias
                   </Typography>
@@ -101,7 +101,7 @@ export default function BackupsCard({ onMessage }) {
                     <Chip size="small" label={kind.label} color={kind.color} variant="outlined" />
                   </TableCell>
                   <TableCell align="right">{formatBytes(backup.size)}</TableCell>
-                  {desktop && (
+                  {hasLocalData && (
                     <TableCell align="right">
                       <Button size="small" startIcon={<RestoreIcon />} onClick={() => setRestoring(backup)}>
                         Restaurar

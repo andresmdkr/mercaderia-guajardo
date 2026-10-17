@@ -42,6 +42,7 @@ export default function App() {
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/users" element={<SettingsPage />} />
           <Route path="/settings/backups" element={<SettingsPage />} />
           <Route path="/settings/whatsapp" element={<SettingsPage />} />
           <Route path="/settings/app" element={<SettingsPage />} />

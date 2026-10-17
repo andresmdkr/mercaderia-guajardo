@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+    <title>Mercadería Guajardo</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { display: flex; align-items: center; justify-content: center; background: #faf9f5; color: #29261b;
+             font-family: 'Segoe UI', sans-serif; user-select: none; }
+      main { width: 100%; max-width: 520px; padding: 28px; }
+      h1 { font-family: Georgia, serif; font-size: 26px; font-weight: 500; margin: 0 0 6px; }
+      p { margin: 0 0 18px; color: #6b665a; font-size: 15px; line-height: 1.45; }
+      .choice { display: block; width: 100%; text-align: left; margin: 0 0 12px; padding: 16px 18px; border-radius: 14px;
+                border: 1px solid #d9d4c4; background: #fff; color: inherit; font: inherit; cursor: pointer; }
+      .choice:hover, .choice:focus-visible { border-color: #c96442; outline: 2px solid #c96442; outline-offset: 2px; }
+      .choice b { display: block; font-size: 17px; margin-bottom: 3px; }
+      .choice span { color: #6b665a; font-size: 14px; }
+      label { display: block; font-weight: 600; margin: 4px 0 6px; }
+      input { width: 100%; padding: 12px 14px; font: inherit; font-size: 17px; border: 1px solid #b9b3a0; border-radius: 10px; user-select: text; }
+      input:focus { outline: 2px solid #c96442; border-color: #c96442; }
+      .hint { font-size: 13px; margin: 8px 0 16px; }
+      .row { display: flex; gap: 10px; flex-wrap: wrap; }
+      button.primary, button.secondary { padding: 12px 20px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; border: 1px solid #c96442; }
+      button.primary { background: #c96442; color: #fff; }
+      button.secondary { background: #fff; color: #c96442; }
+      button:disabled { opacity: .55; cursor: default; }
+      .message { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; background: #fbeceb; color: #8a1f17; font-size: 14px; }
+      .ok { background: #e8f3ec; color: #1d4a31; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section id="choose" hidden>
+        <h1>Mercadería Guajardo</h1>
+        <p>¿Cómo se va a usar el programa en esta computadora?</p>
+        <button class="choice" id="main"><b>Esta es la PC principal</b><span>Acá se guardan los datos del negocio. Es la que tiene que estar prendida.</span></button>
+        <button class="choice" id="second"><b>Es una segunda PC</b><span>Se conecta a la PC principal por la red del local y usa sus mismos datos.</span></button>
+      </section>
+
+      <section id="connect" hidden>
+        <h1>Conectarse a la PC principal</h1>
+        <p>En la PC principal, andá a <b>Configuración → Aplicación → Usar desde otra computadora</b>: ahí aparece la dirección.</p>
+        <label for="address">Dirección de la PC principal</label>
+        <input id="address" placeholder="192.168.1.20" autocomplete="off" spellcheck="false" />
+        <p class="hint">Escribí solo los números (por ejemplo 192.168.1.20). Las dos PC tienen que estar en la misma red.</p>
+        <div id="connectMessage" class="message" hidden></div>
+        <div class="row">
+          <button class="primary" id="connectBtn">Conectar</button>
+          <button class="secondary" id="back">Volver</button>
+        </div>
+      </section>
+
+      <section id="problem" hidden>
+        <h1>No encuentro la PC principal</h1>
+        <p>Buscando en <b id="where"></b>. Revisá que esa computadora esté prendida, con Mercadería Guajardo abierto, y que las dos estén en la misma red.</p>
+        <div id="problemMessage" class="message" hidden></div>
+        <div class="row">
+          <button class="primary" id="retry">Reintentar</button>
+          <button class="secondary" id="change">Cambiar la dirección</button>
+          <button class="secondary" id="quit">Salir</button>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const show = (view) => { for (const id of ['choose', 'connect', 'problem']) $(id).hidden = id !== view; if (view === 'connect') $('address').focus(); };
+      const note = (id, text, ok) => { const el = $(id); el.textContent = text ?? ''; el.hidden = !text; el.classList.toggle('ok', Boolean(ok)); };
+
+      $('main').addEventListener('click', () => window.setup.useAsMain());
+      $('second').addEventListener('click', () => { note('connectMessage', ''); show('connect'); });
+      $('back').addEventListener('click', async () => show((await window.setup.getState()).canChoose ? 'choose' : 'problem'));
+      $('change').addEventListener('click', () => { note('connectMessage', ''); show('connect'); });
+      $('quit').addEventListener('click', () => window.setup.quit());
+
+      async function connect() {
+        $('connectBtn').disabled = true;
+        note('connectMessage', 'Conectando…', true);
+        const result = await window.setup.connect($('address').value);
+        if (!result.ok) { note('connectMessage', result.message); $('connectBtn').disabled = false; }
+      }
+      $('connectBtn').addEventListener('click', connect);
+      $('address').addEventListener('keydown', (event) => { if (event.key === 'Enter') connect(); });
+
+      $('retry').addEventListener('click', async () => {
+        $('retry').disabled = true;
+        note('problemMessage', 'Buscando…', true);
+        const result = await window.setup.retry();
+        if (!result.ok) { note('problemMessage', result.message); $('retry').disabled = false; }
+      });
+
+      window.setup.getState().then((state) => {
+        $('where').textContent = state.serverUrl ?? '';
+        $('address').value = (state.serverUrl ?? '').replace(/^http:\/\//, '').replace(/:38417$/, '');
+        show(state.view);
+      });
+    </script>
+  </body>
+</html>

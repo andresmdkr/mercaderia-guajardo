@@ -6,7 +6,8 @@ const fs = require('node:fs');
 const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
-const { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, shell } = require('electron');
+const { pathToFileURL } = require('node:url');
+const { app, BrowserWindow, Menu, Tray, clipboard, dialog, ipcMain, nativeImage, shell } = require('electron');
 const appServer = require('./appServer');
 const diagnostics = require('./diagnostics');
 const { printInChildProcess, runPrintJob } = require('./print');
@@ -24,10 +25,24 @@ if (PRINT_JOB) app.setPath('userData', path.dirname(PRINT_JOB));
 if (SMOKE_TEST) app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'mg-smoke-')));
 
 const ICON = path.join(__dirname, '..', 'build', 'icon.ico');
+const SETUP_HTML = path.join(__dirname, 'setup.html');
+const SETUP_URL = pathToFileURL(SETUP_HTML).href;
+const START_HIDDEN = process.argv.includes('--oculto'); // lo usa el arranque con Windows: abre sin mostrar la ventana
 let logFile = null;
 let mainWindow = null;
 let splash = null;
 let notifiedVersionReady = false;
+
+// Cómo se usa esta computadora: 'main' (guarda los datos; puede dejar entrar a otras PC por la red del local) o
+// 'client' (segunda PC: muestra los datos de la principal y no tiene base propia).
+let role = 'main';
+let setupWindow = null;
+let setupResolve = null; // mientras se está eligiendo el rol por primera vez
+let setupView = 'choose';
+let setupClosing = false; // se está cerrando a propósito (ya se eligió): no es "cerró sin elegir"
+let tray = null;
+let quitting = false;
+let appReady = false; // recién con la ventana principal creada, cerrar todas las ventanas termina el programa
 
 function log(message) {
   if (!logFile) return;
@@ -84,6 +99,45 @@ function createSplash() {
   splash.loadFile(path.join(__dirname, 'splash.html'));
 }
 
+// Con "Usar desde otra computadora" prendido, el programa tiene que seguir andando aunque se cierre la ventana
+// (si no, la otra PC se queda sin datos): cerrar solo la oculta y queda un ícono junto al reloj.
+const keepRunning = () => role === 'main' && appServer.getState().lan.enabled;
+
+function showMainWindow() {
+  if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function ensureTray() {
+  if (keepRunning() && !tray) {
+    tray = new Tray(nativeImage.createFromPath(ICON));
+    tray.setToolTip('Mercadería Guajardo (sigue funcionando para las otras computadoras)');
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        { label: 'Abrir Mercadería Guajardo', click: showMainWindow },
+        { type: 'separator' },
+        { label: 'Salir (las otras computadoras se quedan sin conexión)', click: () => { quitting = true; app.quit(); } },
+      ])
+    );
+    tray.on('click', showMainWindow);
+  } else if (!keepRunning() && tray) {
+    tray.destroy();
+    tray = null;
+  }
+}
+
+// El programa arranca solo con Windows únicamente si es la PC principal y deja entrar a otras (si no, no hace falta).
+function applyAutoStart() {
+  if (process.platform !== 'win32' || !app.isPackaged) return;
+  try {
+    app.setLoginItemSettings({ openAtLogin: keepRunning(), args: keepRunning() ? ['--oculto'] : [] });
+  } catch (error) {
+    log(`no se pudo configurar el arranque con Windows: ${error.message}`);
+  }
+}
+
 function createMainWindow(origin) {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -104,21 +158,152 @@ function createMainWindow(origin) {
   mainWindow.once('ready-to-show', () => {
     if (splash) splash.close();
     splash = null;
+    if (START_HIDDEN && keepRunning()) return; // arranque con Windows: queda en segundo plano, con su ícono junto al reloj
     mainWindow.maximize();
     mainWindow.show();
+  });
+  mainWindow.on('close', (event) => {
+    if (!keepRunning() || quitting) return;
+    event.preventDefault();
+    mainWindow.hide();
+    if (tray && !app.hasShownBackgroundHint) {
+      app.hasShownBackgroundHint = true;
+      tray.displayBalloon?.({ title: 'Mercadería Guajardo sigue funcionando', content: 'Las otras computadoras pueden seguir usándolo. Para cerrarlo del todo, usá "Salir" en este ícono.' });
+    }
   });
   mainWindow.on('closed', () => {
     mainWindow = null;
     whatsapp.close(); // si se cierra la aplicación, la ventana de WhatsApp no queda huérfana
   });
+  // Segunda PC: si la principal no responde al abrir o recargar, se muestra una pantalla clara en vez de la página de error.
+  mainWindow.webContents.on('did-fail-load', (_event, code, _description, _url, isMainFrame) => {
+    if (role === 'client' && isMainFrame && code !== -3) showConnectionProblem();
+  });
   mainWindow.loadURL(origin);
+  appReady = true;
+}
+
+// --- Elegir cómo se usa esta computadora, y conectarse a la principal (setup.html) ---
+function openSetupWindow(view) {
+  setupView = view;
+  if (setupWindow) {
+    setupWindow.webContents.reload();
+    return;
+  }
+  setupWindow = new BrowserWindow({
+    width: 560,
+    height: 520,
+    resizable: false,
+    center: true,
+    autoHideMenuBar: true,
+    title: 'Mercadería Guajardo',
+    icon: ICON,
+    backgroundColor: '#FAF9F5',
+    webPreferences: { preload: path.join(__dirname, 'setupPreload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+  });
+  setupWindow.on('closed', () => {
+    setupWindow = null;
+    const onPurpose = setupClosing;
+    setupClosing = false;
+    if (!onPurpose && (setupResolve || !appReady)) app.quit(); // cerró esta pantalla sin elegir nada
+  });
+  setupWindow.loadFile(SETUP_HTML);
+}
+
+function closeSetupWindow() {
+  if (!setupWindow) return;
+  const window = setupWindow;
+  setupClosing = true; // ya se resolvió: cerrar no tiene que terminar el programa
+  window.close();
+}
+
+// Primera vez en una instalación nueva: pregunta si es la principal o una segunda PC. Devuelve 'main' o 'client'.
+function askRole() {
+  return new Promise((resolve) => {
+    setupResolve = resolve;
+    openSetupWindow('choose');
+  });
+}
+
+function showConnectionProblem() {
+  openSetupWindow('problem'); // primero la pantalla nueva: si no, por un instante no habría ninguna ventana y el programa se cerraría
+  if (mainWindow) {
+    const window = mainWindow;
+    mainWindow = null;
+    window.destroy();
+  }
+}
+
+// Segunda PC: abre la pantalla de la principal (si responde) o muestra el aviso.
+async function openClientWindow(serverUrl) {
+  const { origin } = appServer.startRemote({ dataDir: app.getPath('userData'), serverUrl });
+  const check = await appServer.checkServer(origin);
+  log(`modo conexión: ${origin} → ${check.ok ? `responde (versión ${check.version})` : 'no responde'}`);
+  if (!check.ok) {
+    if (splash) splash.close();
+    splash = null;
+    appReady = true;
+    openSetupWindow('problem');
+    return;
+  }
+  createMainWindow(origin);
+  closeSetupWindow();
+}
+
+function registerSetupIpc() {
+  const setupHandle = (channel, action) =>
+    ipcMain.handle(channel, (event, ...args) => {
+      if (event.senderFrame.url !== SETUP_URL) throw new Error('Origen no permitido');
+      return action(...args);
+    });
+  const serverUrl = () => appServer.readConfig(app.getPath('userData')).serverUrl ?? null;
+
+  setupHandle('setup:get-state', () => ({ view: setupView, serverUrl: serverUrl(), canChoose: Boolean(setupResolve) }));
+  setupHandle('setup:use-main', () => {
+    appServer.writeConfig(app.getPath('userData'), { role: 'main' });
+    log('esta PC se configuró como principal');
+    const resolve = setupResolve;
+    closeSetupWindow();
+    if (resolve) resolve('main');
+    return { ok: true };
+  });
+  setupHandle('setup:connect', async (address) => {
+    const url = appServer.normalizeServerUrl(address);
+    if (!url) return { ok: false, message: 'Escribí la dirección como aparece en la PC principal, por ejemplo 192.168.1.20' };
+    const check = await appServer.checkServer(url);
+    if (!check.ok) return check;
+    appServer.writeConfig(app.getPath('userData'), { role: 'client', serverUrl: url });
+    log(`esta PC se configuró como segunda PC, conectada a ${url}`);
+    const resolve = setupResolve;
+    if (resolve) {
+      setupResolve = null;
+      resolve('client'); // el arranque sigue y abre la ventana
+    } else {
+      await openClientWindow(url); // venía del aviso de "no encuentro la PC principal"
+    }
+    return { ok: true };
+  });
+  setupHandle('setup:retry', async () => {
+    const url = serverUrl();
+    if (!url) return { ok: false, message: 'Falta la dirección de la PC principal' };
+    const check = await appServer.checkServer(url);
+    if (!check.ok) return check;
+    await openClientWindow(url);
+    return { ok: true };
+  });
+  setupHandle('setup:quit', () => {
+    quitting = true;
+    app.quit();
+  });
 }
 
 // --- Comunicación con la pantalla (solo se le contesta a nuestra propia interfaz) ---
-function handle(channel, action) {
+// { mainOnly }: acciones sobre los archivos de ESTA computadora (copias, carpeta, modo de prueba): en una segunda PC no existen.
+function handle(channel, action, { mainOnly = false } = {}) {
   ipcMain.handle(channel, (event, ...args) => {
     const origin = appServer.getState().origin;
     if (!origin || !event.senderFrame.url.startsWith(origin)) throw new Error('Origen no permitido');
+    if (mainOnly && role === 'client') return { ok: false, message: 'Esto se hace en la PC principal.' };
     return action(...args);
   });
 }
@@ -152,29 +337,64 @@ function relaunch() {
 }
 
 function registerIpc() {
+  // Quién es esta PC: lo necesita la pantalla antes de dibujarse (para ocultar lo que solo vale en la principal).
+  ipcMain.on('desktop:get-role', (event) => {
+    event.returnValue = event.senderFrame.url.startsWith(appServer.getState().origin ?? '\0') ? role : 'main';
+  });
+
   handle('desktop:open-backups-folder', async () => {
     const dir = appServer.getState().backupsDir;
     fs.mkdirSync(dir, { recursive: true });
     return { ok: (await shell.openPath(dir)) === '' };
-  });
+  }, { mainOnly: true });
 
   handle('desktop:restore-backup', async (name) => {
     const result = await appServer.restoreBackup(name, log);
     if (result.ok) setTimeout(relaunch, 300); // deja contestar a la pantalla y reabre con la base restaurada
     return result;
-  });
+  }, { mainOnly: true });
 
   // Modo de prueba: la app se reinicia con otra base (la demo, o de nuevo la real).
   handle('desktop:enter-demo', async () => {
     const result = await appServer.enterDemo(log);
     if (result.ok) setTimeout(relaunch, 300);
     return result;
-  });
+  }, { mainOnly: true });
 
   handle('desktop:exit-demo', async (fresh) => {
     const result = await appServer.exitDemo({ fresh: fresh === true }, log);
     if (result.ok) setTimeout(relaunch, 300);
     return result;
+  }, { mainOnly: true });
+
+  // Conexión entre computadoras: datos para la tarjeta de Configuración.
+  handle('desktop:get-info', () => {
+    const state = appServer.getState();
+    const port = state.lan.port ?? appServer.PREFERRED_PORT;
+    return {
+      role,
+      version: app.getVersion(),
+      serverUrl: state.serverUrl,
+      lan: { enabled: state.lan.enabled, port, urls: appServer.lanAddresses().map(({ name, address }) => ({ name, url: `http://${address}:${port}` })) },
+    };
+  });
+  // Prende o apaga "Usar desde otra computadora". Reinicia la app (el servidor cambia de dirección de escucha).
+  handle('desktop:set-lan', (enabled) => {
+    if (typeof enabled !== 'boolean') return { ok: false, message: 'Valor no válido' };
+    appServer.writeConfig(appServer.getState().dataDir, { lan: enabled });
+    log(`usar desde otra computadora: ${enabled ? 'activado' : 'desactivado'}`);
+    setTimeout(() => {
+      quitting = true; // que el reinicio no se quede en segundo plano
+      relaunch();
+    }, 300);
+    return { ok: true };
+  }, { mainOnly: true });
+  // Segunda PC: deja de estar conectada y vuelve a preguntar cómo se usa (por ejemplo para pasar a ser la principal).
+  handle('desktop:disconnect', () => {
+    appServer.writeConfig(appServer.getState().dataDir, { role: null, serverUrl: null });
+    log('esta PC se desconectó de la principal');
+    setTimeout(relaunch, 300);
+    return { ok: true };
   });
 
   handle('desktop:open-whatsapp', (url) => {
@@ -250,7 +470,7 @@ function registerIpc() {
       properties: ['openDirectory', 'createDirectory'],
     });
     return { canceled: result.canceled, folder: result.filePaths[0] ?? null };
-  });
+  }, { mainOnly: true });
 
   handle('desktop:print-html', (html) => printInChildProcess(html, { log }));
 
@@ -336,10 +556,17 @@ const isFirstInstance = SMOKE_TEST || Boolean(PRINT_JOB) || app.requestSingleIns
 if (!isFirstInstance) app.quit();
 
 app.on('second-instance', () => {
-  if (!mainWindow) return;
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.focus();
+  if (mainWindow) return showMainWindow();
+  if (setupWindow) setupWindow.focus();
 });
+
+// Instalación nueva (sin base ni configuración): hay que preguntar si es la PC principal o una segunda PC.
+// Una instalación que ya venía funcionando (tiene su base) sigue siendo la principal, sin preguntar nada.
+function needsRoleQuestion(dataDir, config) {
+  if (config.role === 'main' || config.role === 'client') return false;
+  const existing = ['mercaderia.sqlite', 'demo.sqlite'].some((name) => fs.existsSync(path.join(dataDir, name)));
+  return !existing && config.mode === undefined;
+}
 
 app.whenReady().then(async () => {
   if (!isFirstInstance) return;
@@ -350,11 +577,31 @@ app.whenReady().then(async () => {
   if (SMOKE_TEST) return runSmokeTest();
 
   Menu.setApplicationMenu(null);
-  createSplash();
+  const dataDir = app.getPath('userData');
+  registerSetupIpc();
   try {
-    const { origin } = await appServer.start({ dataDir: app.getPath('userData'), appVersion: app.getVersion(), log });
+    let config = appServer.readConfig(dataDir);
+    if (needsRoleQuestion(dataDir, config)) {
+      role = await askRole(); // la pantalla queda abierta hasta que se elige
+      config = appServer.readConfig(dataDir);
+    } else if (config.role !== 'main' && config.role !== 'client') {
+      appServer.writeConfig(dataDir, { role: 'main' });
+    }
+    createSplash();
+    role = config.role === 'client' && appServer.normalizeServerUrl(config.serverUrl) ? 'client' : 'main';
+
+    if (role === 'client') {
+      registerIpc();
+      await openClientWindow(appServer.normalizeServerUrl(config.serverUrl));
+      updates.setup({ onChange: onUpdateChange, logger: log });
+      updates.check();
+      return;
+    }
+    const { origin } = await appServer.start({ dataDir, appVersion: app.getVersion(), log });
     registerIpc();
     createMainWindow(origin);
+    ensureTray();
+    applyAutoStart();
     schedulePreload();
     updates.setup({ onChange: onUpdateChange, logger: log });
     updates.check();
@@ -369,6 +616,7 @@ app.whenReady().then(async () => {
 // Al salir (cerrar la ventana, actualizar o restaurar) primero se cierra la base de datos.
 let databaseClosed = false;
 app.on('before-quit', (event) => {
+  quitting = true;
   if (databaseClosed || SMOKE_TEST || PRINT_JOB) return;
   event.preventDefault();
   databaseClosed = true;
@@ -376,5 +624,6 @@ app.on('before-quit', (event) => {
 });
 
 app.on('window-all-closed', () => {
-  if (!PRINT_JOB) app.quit(); // la copia que imprime termina sola cuando deja su resultado
+  if (PRINT_JOB) return; // la copia que imprime termina sola cuando deja su resultado
+  if (appReady && !keepRunning()) app.quit();
 });

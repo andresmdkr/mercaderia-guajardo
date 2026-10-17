@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Button } from '@mui/material';
 import ScienceIcon from '@mui/icons-material/ScienceOutlined';
 import ConfirmDialog from '../../../components/ConfirmDialog';
-import { desktop } from '../../../services/desktop';
+import { desktop, hasLocalData } from '../../../services/desktop';
 
 // Botón que reinicia la aplicación en modo de prueba (o arma una demo nueva si ya estaba). Solo en la app instalada.
 export default function EnterDemoButton({ label = 'Entrar en modo de prueba', variant = 'outlined', restart = false }) {
@@ -10,7 +10,7 @@ export default function EnterDemoButton({ label = 'Entrar en modo de prueba', va
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  if (!desktop) return null;
+  if (!hasLocalData) return null;
 
   const handleConfirm = async () => {
     setConfirming(false);

@@ -2,6 +2,10 @@
 // En el navegador (desarrollo) no existe y vale null: las pantallas ocultan lo que solo funciona en la app instalada.
 //
 // Lo que ofrece window.desktop:
+//   role                         'main' (esta PC guarda los datos) o 'client' (segunda PC conectada a la principal: sin carpeta de copias ni modo de prueba)
+//   getInfo()                    → { role, version, serverUrl, lan: { enabled, port, urls: [{ name, url }] } }
+//   setLan(enabled)              prende o apaga "Usar desde otra computadora" y reinicia la app (solo la PC principal) → { ok, message }
+//   disconnect()                 segunda PC: se desconecta de la principal y reinicia para volver a elegir → { ok }
 //   openBackupsFolder()          abre la carpeta de las copias de seguridad
 //   restoreBackup(name)          restaura una copia y reinicia la app → { ok, message }
 //   enterDemo()                  activa el modo de prueba (base con datos de ejemplo) y reinicia la app → { ok, message }
@@ -20,3 +24,8 @@
 //   printHtml(html)              abre el diálogo de impresión de Windows con ese documento → { ok, message }
 //   copyDiagnostics()            copia al portapapeles el informe de diagnóstico → { ok }
 export const desktop = typeof window !== 'undefined' ? (window.desktop ?? null) : null;
+
+// Segunda PC: usa los datos de la principal, así que lo que toca archivos de ESTA computadora (carpeta de copias, restaurar,
+// modo de prueba, copia externa) no está disponible y se oculta.
+export const isClientPc = desktop?.role === 'client';
+export const hasLocalData = Boolean(desktop) && !isClientPc;
